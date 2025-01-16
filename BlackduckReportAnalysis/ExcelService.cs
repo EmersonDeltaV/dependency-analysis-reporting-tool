@@ -28,13 +28,13 @@ namespace BlackduckReportAnalysis
             worksheet.Range(2, 1, 2, 11).Merge();
             worksheet.Range(3, 1, 3, 11).Merge();
 
-            worksheet.Cell(1, 1).Value = "Product Name";
+            worksheet.Cell(1, 1).Value = ConfigService.Config.ProductName;
             worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(2, 1).Value = "Version Number";
+            worksheet.Cell(2, 1).Value = ConfigService.Config.ProductVersion;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(3, 1).Value = "Product Iteration (PI) or Date";
+            worksheet.Cell(3, 1).Value = ConfigService.Config.ProductIteration;
             worksheet.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             var cellBefore = worksheet.Cell(4, 1);

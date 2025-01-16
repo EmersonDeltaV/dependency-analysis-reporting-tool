@@ -9,5 +9,8 @@
         public string BaseUrl { get; set; } = string.Empty;
         public string LogPath { get; set; } = string.Empty;
         public string ProjectVersionsToInclude { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public string ProductVersion { get; set; } = string.Empty;
+        public string ProductIteration { get; set; } = string.Empty;
     }
 }
