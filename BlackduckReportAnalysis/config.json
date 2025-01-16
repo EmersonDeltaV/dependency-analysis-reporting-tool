@@ -4,5 +4,6 @@
   "IncludeTransitiveDependency": "false",
   "Token": "",
   "BaseUrl": "https://blackduck.company.org",
-  "LogPath": ""
+  "LogPath": "",
+  "ProjectVersionsToInclude": ""
 }

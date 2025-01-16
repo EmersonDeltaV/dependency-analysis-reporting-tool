@@ -1,5 +1,6 @@
 ﻿using BlackduckReportAnalysis.Models;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using System.Reflection;
 
 namespace BlackduckReportAnalysis
@@ -17,11 +18,10 @@ namespace BlackduckReportAnalysis
         {
             xLWorkbook = new XLWorkbook();
             worksheet = xLWorkbook.Worksheets.Add("Black Duck Security Risks");
-
-            FormatHeader();
+            FormatHeader(worksheet);
         }
 
-        private static void FormatHeader()
+        private static void FormatHeader(IXLWorksheet worksheet)
         {
             //format general details detail
             worksheet.Range(1, 1, 1, 11).Merge();
@@ -82,10 +82,11 @@ namespace BlackduckReportAnalysis
         {
             worksheet.Cell(currentRow, 1).Value = rowDetails.ApplicationName;
             worksheet.Cell(currentRow, 2).Value = rowDetails.SoftwareComponent;
-            worksheet.Cell(currentRow, 3).Value = rowDetails.SecurityRisk;
-            worksheet.Cell(currentRow, 4).Value = rowDetails.VulnerabilityId;
-            worksheet.Cell(currentRow, 5).Value = rowDetails.RecommendedFix;
-            worksheet.Cell(currentRow, 7).Value = rowDetails.MatchType;
+            worksheet.Cell(currentRow, 3).Value = rowDetails.Version;
+            worksheet.Cell(currentRow, 4).Value = rowDetails.SecurityRisk;
+            worksheet.Cell(currentRow, 5).Value = rowDetails.VulnerabilityId;
+            worksheet.Cell(currentRow, 6).Value = rowDetails.RecommendedFix;
+            worksheet.Cell(currentRow, 8).Value = rowDetails.MatchType;
 
             if (string.IsNullOrEmpty(rowDetails.RecommendedFix))
             {
@@ -104,6 +105,7 @@ namespace BlackduckReportAnalysis
         /// </summary>
         public static void SaveReport()
         {
+            worksheet.Columns().AdjustToContents();
             xLWorkbook.SaveAs(Path.Combine(ConfigService.Config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             SeriLogger.Information("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();

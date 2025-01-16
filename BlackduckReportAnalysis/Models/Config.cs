@@ -8,5 +8,6 @@
         public string Token { get; set; } = string.Empty;
         public string BaseUrl { get; set; } = string.Empty;
         public string LogPath { get; set; } = string.Empty;
+        public string ProjectVersionsToInclude { get; set; } = string.Empty;
     }
 }
