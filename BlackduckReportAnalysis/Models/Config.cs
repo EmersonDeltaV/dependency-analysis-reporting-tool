@@ -12,5 +12,7 @@
         public string ProductName { get; set; } = string.Empty;
         public string ProductVersion { get; set; } = string.Empty;
         public string ProductIteration { get; set; } = string.Empty;
+        public string PreviousResults { get; set; } = string.Empty;
+        public string CurrentResults { get; set; } = string.Empty;
     }
 }

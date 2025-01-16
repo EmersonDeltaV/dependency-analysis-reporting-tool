@@ -10,11 +10,21 @@ class Program
 
             SeriLogger.ConfigureSerilog();
 
-            ExcelService.Initialize();
+            if(ConfigService.Config.PreviousResults == string.Empty || ConfigService.Config.CurrentResults == string.Empty)
+            {
+                
+                SeriLogger.Information("No previous results found. Skipping comparison.");
 
-            await CsvService.AnalyzeReport();
+                ExcelService.Initialize();
+                await CsvService.AnalyzeReport();
+                ExcelService.SaveReport();
 
-            ExcelService.SaveReport();
+                return;
+            }
+            else
+            {
+                ExcelService.CompareExcelFiles(ConfigService.Config.CurrentResults, ConfigService.Config.PreviousResults, ConfigService.Config.OutputFilePath);
+            }
         }
         catch(HttpRequestException)
         {

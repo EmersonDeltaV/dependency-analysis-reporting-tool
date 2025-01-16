@@ -8,5 +8,7 @@
   "ProjectVersionsToInclude": "",
   "ProductName": "Product Name",
   "ProductVersion": "Version Number",
-  "ProductIteration": "Product Iteration (PI) or Date"
+  "ProductIteration": "Product Iteration (PI) or Date",
+  "PreviousResults": "",
+  "CurrentResults": ""
 }
