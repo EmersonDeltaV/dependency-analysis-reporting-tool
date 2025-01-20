@@ -92,7 +92,7 @@ namespace BlackduckReportAnalysis
                 return null;
             }
 
-            if (!versions.Contains("") && !versions.Contains(version))
+            if (!versions.Contains(string.Empty) && !versions.Contains(version))
             {
                 SeriLogger.Information($"This row with version {version} does not match the required version. Skipping this row.");
                 return null;
