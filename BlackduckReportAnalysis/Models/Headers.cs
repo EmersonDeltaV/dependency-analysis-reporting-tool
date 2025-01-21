@@ -7,6 +7,7 @@
     {
         public const string Application = "Application";
         public const string SoftwareComponent = "Software Component";
+        public const string Version = "Version";
         public const string SecurityRisk = "Security Risk";
         public const string VulnerabilityId = "Vulnerability ID";
         public const string RecommendedFixVersion = "Recommended Fix Version";
@@ -28,6 +29,7 @@
         public const string SecurityRisk = "Security Risk";
         public const string VulnerabilityId = "Vulnerability ID";
         public const string MatchType = "Match type";
+        public const string Version = "Version";
     }
 
 }

@@ -3,6 +3,12 @@
   "OutputFilePath": "",
   "IncludeTransitiveDependency": "false",
   "Token": "",
-  "BaseUrl": "https://blackduck.company.org",
-  "LogPath": ""
+  "BaseUrl": "https://blackduck.emrsn.org",
+  "LogPath": "",
+  "ProjectVersionsToInclude": "",
+  "ProductName": "Product Name",
+  "ProductVersion": "Version Number",
+  "ProductIteration": "Product Iteration (PI) or Date",
+  "PreviousResults": "",
+  "CurrentResults": ""
 }

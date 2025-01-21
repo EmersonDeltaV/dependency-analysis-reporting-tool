@@ -10,6 +10,7 @@ namespace BlackduckReportAnalysis
         private static int securityRiskIndex;
         private static int vulnerabilityIdIndex;
         private static int matchTypeIndex;
+        private static int versionIndex;
 
         /// <summary>
         /// Analyzes Blackduck reports by processing CSV files.
@@ -72,6 +73,7 @@ namespace BlackduckReportAnalysis
             securityRiskIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.SecurityRisk, StringComparison.OrdinalIgnoreCase));
             vulnerabilityIdIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.VulnerabilityId, StringComparison.OrdinalIgnoreCase));
             matchTypeIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.MatchType, StringComparison.OrdinalIgnoreCase));
+            versionIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.Version, StringComparison.OrdinalIgnoreCase));
 
             return projectNameIndex != -1 && componentOriginIdIndex != -1 && securityRiskIndex != -1 && vulnerabilityIdIndex != -1;
         }
@@ -79,12 +81,20 @@ namespace BlackduckReportAnalysis
         private static RowDetails? ExtractRowDetails(string csvRowData)
         {
             var parsedRow = ParseCsvRow(csvRowData);
-
             var matchType = parsedRow[matchTypeIndex];
+            var version = parsedRow[versionIndex];
+
+            var versions = ConfigService.Config.ProjectVersionsToInclude.Split(',');
 
             if (!ConfigService.Config.IncludeTransitiveDependency &&
                 matchType.Equals("Transitive Dependency", StringComparison.OrdinalIgnoreCase))
             {
+                return null;
+            }
+
+            if (!versions.Contains(string.Empty) && !versions.Contains(version))
+            {
+                SeriLogger.Information($"This row with version {version} does not match the required version. Skipping this row.");
                 return null;
             }
 
@@ -94,7 +104,8 @@ namespace BlackduckReportAnalysis
                 SoftwareComponent = parsedRow[componentOriginIdIndex],
                 SecurityRisk = parsedRow[securityRiskIndex],
                 VulnerabilityId = parsedRow[vulnerabilityIdIndex],
-                MatchType = matchType
+                MatchType = matchType,
+                Version = version
             };
 
             return rowDetails;

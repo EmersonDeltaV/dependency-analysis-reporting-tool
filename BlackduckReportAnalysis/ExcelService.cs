@@ -1,5 +1,6 @@
 ﻿using BlackduckReportAnalysis.Models;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using System.Reflection;
 
 namespace BlackduckReportAnalysis
@@ -17,24 +18,23 @@ namespace BlackduckReportAnalysis
         {
             xLWorkbook = new XLWorkbook();
             worksheet = xLWorkbook.Worksheets.Add("Black Duck Security Risks");
-
-            FormatHeader();
+            FormatHeader(worksheet);
         }
 
-        private static void FormatHeader()
+        private static void FormatHeader(IXLWorksheet worksheet)
         {
             //format general details detail
             worksheet.Range(1, 1, 1, 11).Merge();
             worksheet.Range(2, 1, 2, 11).Merge();
             worksheet.Range(3, 1, 3, 11).Merge();
 
-            worksheet.Cell(1, 1).Value = "Product Name";
+            worksheet.Cell(1, 1).Value = ConfigService.Config.ProductName;
             worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(2, 1).Value = "Version Number";
+            worksheet.Cell(2, 1).Value = ConfigService.Config.ProductVersion;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(3, 1).Value = "Product Iteration (PI) or Date";
+            worksheet.Cell(3, 1).Value = ConfigService.Config.ProductIteration;
             worksheet.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             var cellBefore = worksheet.Cell(4, 1);
@@ -47,6 +47,15 @@ namespace BlackduckReportAnalysis
             cellDuring.Style.Fill.BackgroundColor = XLColor.Yellow;
             cellDuring.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
+            var cellNew = worksheet.Cell(4, 2);
+            cellNew.Value = "New Findings";
+            cellNew.Style.Fill.BackgroundColor = XLColor.LightPink;
+            cellNew.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            var cellExisting = worksheet.Cell(5, 2);
+            cellExisting.Value = "Existing Findings";
+            cellExisting.Style.Fill.BackgroundColor = XLColor.LightBlue;
+            cellExisting.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             worksheet.Range("A7:K7").SetAutoFilter();
 
             // Extract headers details and populate
@@ -82,10 +91,11 @@ namespace BlackduckReportAnalysis
         {
             worksheet.Cell(currentRow, 1).Value = rowDetails.ApplicationName;
             worksheet.Cell(currentRow, 2).Value = rowDetails.SoftwareComponent;
-            worksheet.Cell(currentRow, 3).Value = rowDetails.SecurityRisk;
-            worksheet.Cell(currentRow, 4).Value = rowDetails.VulnerabilityId;
-            worksheet.Cell(currentRow, 5).Value = rowDetails.RecommendedFix;
-            worksheet.Cell(currentRow, 7).Value = rowDetails.MatchType;
+            worksheet.Cell(currentRow, 3).Value = rowDetails.Version;
+            worksheet.Cell(currentRow, 4).Value = rowDetails.SecurityRisk;
+            worksheet.Cell(currentRow, 5).Value = rowDetails.VulnerabilityId;
+            worksheet.Cell(currentRow, 6).Value = rowDetails.RecommendedFix;
+            worksheet.Cell(currentRow, 8).Value = rowDetails.MatchType;
 
             if (string.IsNullOrEmpty(rowDetails.RecommendedFix))
             {
@@ -104,9 +114,94 @@ namespace BlackduckReportAnalysis
         /// </summary>
         public static void SaveReport()
         {
+            worksheet.Columns().AdjustToContents();
             xLWorkbook.SaveAs(Path.Combine(ConfigService.Config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             SeriLogger.Information("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();
+        }
+
+        public static void CompareExcelFiles(string filePath1, string filePath2, string outputFilePath)
+        {
+            using (var workbook1 = new XLWorkbook(filePath1))
+            using (var workbook2 = new XLWorkbook(filePath2))
+            using (var outputWorkbook = new XLWorkbook())
+            {
+                var worksheet1 = workbook1.Worksheet(1);
+                var worksheet2 = workbook2.Worksheet(1);
+                var outputWorksheet = outputWorkbook.Worksheets.Add("Comparison");
+                var excelExtension = ".xlsx";
+
+                int startRow = 8;
+                int endMatchColumn = 8; // Column H
+                int endColumn = 12; // Column L
+                var maxRow1 = worksheet1.LastRowUsed().RowNumber();
+                var maxRow2 = worksheet2.LastRowUsed().RowNumber();
+
+                for (int row1 = startRow; row1 <= maxRow1; row1++)
+                {
+                    int matchingRow2 = -1;
+
+                    for (int row2 = startRow; row2 <= maxRow2; row2++)
+                    {
+                        bool allColumnsMatch = true;
+
+                        for (int col = 1; col <= endMatchColumn; col++)
+                        {
+                            if (col == 3) // Skip column C
+                                continue;
+
+                            var cell1 = worksheet1.Cell(row1, col);
+                            var cell2 = worksheet2.Cell(row2, col);
+
+                            if (cell1.Value.ToString() != cell2.Value.ToString())
+                            {
+                                allColumnsMatch = false;
+                                break;
+                            }
+                        }
+
+                        if (allColumnsMatch)
+                        {
+                            matchingRow2 = row2;
+                            break;
+                        }
+                    }
+
+                    for (int col = 1; col <= endColumn; col++)
+                    {
+                        var cell1 = worksheet1.Cell(row1, col);
+                        var outputCell = outputWorksheet.Cell(row1, col);
+                        outputCell.Value = cell1.Value;
+
+                        if (matchingRow2 != -1)
+                        {
+                            outputCell.Style.Fill.BackgroundColor = XLColor.LightBlue;
+                        }
+                        else
+                        {
+                            outputCell.Style.Fill.BackgroundColor = XLColor.LightPink;
+                        }
+                    }
+
+                    if (matchingRow2 != -1)
+                    {
+                        for (int col = 9; col <= 12; col++) // Columns I to L
+                        {
+                            var cell2 = worksheet2.Cell(matchingRow2, col);
+                            var outputCell = outputWorksheet.Cell(row1, col);
+                            outputCell.Value = cell2.Value;
+                        }
+                    }
+                    else
+                    {
+                        SeriLogger.Information("Found 1 new finding.");
+                    }
+                }
+
+                FormatHeader(outputWorksheet);
+                outputWorksheet.Columns().AdjustToContents();
+                outputWorkbook.SaveAs(Path.Combine(ConfigService.Config.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            }
         }
     }
 }
