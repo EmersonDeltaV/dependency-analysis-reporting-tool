@@ -61,6 +61,12 @@ dotnet restore
 
     **NOTE**: Please use double backslash `\\` to indicate the path.
 
+#### Configure the Tool for Auto-Download of Reports
+
+1. Ensure that the Token provided in the config.json file has Read/Write access to the Black Duck API.
+2. Set the value of the `EnableDownloadTool` property under `FeatureToggles` in the config.json file to `true`.
+3. Add the Blackduck links of the projects that you would like to be a part of the report in the `projectLinks` property under `DownloadConfiguration:VulnerabilityReportParameters` in the config.json file. Ensure that it follows the following format: `https://blackduck/api/projects/{PROJECT_GUID}`
+
 ### Run the Black Duck Report Analysis Tool
 
 1. Once you configured the config.json you can now run 'BlackduckReportAnalysis.exe' as administrator.
