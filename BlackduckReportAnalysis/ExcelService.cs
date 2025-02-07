@@ -129,10 +129,9 @@ namespace BlackduckReportAnalysis
                 var worksheet1 = workbook1.Worksheet(1);
                 var worksheet2 = workbook2.Worksheet(1);
                 var outputWorksheet = outputWorkbook.Worksheets.Add("Comparison");
-                var excelExtension = ".xlsx";
 
                 int startRow = 8;
-                int endMatchColumn = 8; // Column H
+                int endMatchColumn = 5; // Column E
                 int endColumn = 12; // Column L
                 var maxRow1 = worksheet1.LastRowUsed().RowNumber();
                 var maxRow2 = worksheet2.LastRowUsed().RowNumber();
@@ -148,7 +147,8 @@ namespace BlackduckReportAnalysis
                         for (int col = 1; col <= endMatchColumn; col++)
                         {
                             if (col == 3) // Skip column C
-                                continue;
+                                if (col == 3 || col == 4) // Skip column C and D
+                                    continue;
 
                             var cell1 = worksheet1.Cell(row1, col);
                             var cell2 = worksheet2.Cell(row2, col);
