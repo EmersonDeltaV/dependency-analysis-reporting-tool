@@ -146,9 +146,8 @@ namespace BlackduckReportAnalysis
 
                         for (int col = 1; col <= endMatchColumn; col++)
                         {
-                            if (col == 3) // Skip column C
-                                if (col == 3 || col == 4) // Skip column C and D
-                                    continue;
+                            if (col == 3 || col == 4) // Skip column C and D
+                                continue;
 
                             var cell1 = worksheet1.Cell(row1, col);
                             var cell2 = worksheet2.Cell(row2, col);
