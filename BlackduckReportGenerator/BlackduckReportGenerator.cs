@@ -1,32 +1,32 @@
 ﻿using BlackduckReportGeneratorTool.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace BlackduckReportGeneratorTool
 {
-    public class Startup(IBlackduckReportService blackduckReportService,
+    public class BlackduckReportGenerator(IBlackduckReportService blackduckReportService,
         IFileService fileService, IConfiguration configuration,
-        ILogger<Startup> logger) : IHostedService
+        ILogger<BlackduckReportGenerator> logger) : IBlackduckReportGenerator
     {
         private const string KEY_REPORT_FOLDER_PATH = "ReportFolderPath";
+        private const string DL_FOLDER_PATH = "Downloaded";
 
         private readonly IBlackduckReportService blackduckReportService = blackduckReportService;
         private readonly IFileService fileService = fileService;
         private readonly IConfiguration configuration = configuration;
         private readonly ILogger logger = logger;
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public void GenerateReport()
         {
 
             var reportId = blackduckReportService.DownloadReport().Result;
 
-            var filePath = Path.Combine(Environment.CurrentDirectory, $"downloaded\\{reportId}.zip");
+            var filePath = Path.Combine(Environment.CurrentDirectory, configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, DL_FOLDER_PATH, $"{reportId}.zip");
 
             var extractResult = fileService.ExtractFiles(filePath);
 
             var transferResult = fileService.TransferFiles(extractResult.ResultPath,
-                configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value);
+                Path.Combine(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, DL_FOLDER_PATH));
 
             if (transferResult)
             {
@@ -41,7 +41,13 @@ namespace BlackduckReportGeneratorTool
             fileService.DeleteFile(filePath);
             fileService.DeleteDirectory(extractResult.ResultPath);
 
-            return Task.CompletedTask;
+            return; 
+        }
+
+        public void Cleanup()
+        {
+            Directory.GetFiles(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, "*.csv", SearchOption.AllDirectories).ToList().ForEach(File.Delete);
+            Directory.Delete(Path.Combine(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, DL_FOLDER_PATH));
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

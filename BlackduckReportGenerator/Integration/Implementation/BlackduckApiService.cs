@@ -14,6 +14,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
         private const string KEY_BASEURL = "BaseUrl";
         private const string KEY_TOKEN = "Token";
         private const string KEY_REPORT_FOLDER_PATH = "ReportFolderPath";
+        private const string DL_FOLDER_PATH = "Downloaded";
 
         private readonly IConfiguration configuration;
         private readonly ILogger _logger;
@@ -163,7 +164,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
                 return string.Empty;
             }
 
-            var folderPath = Path.Combine(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value);
+            var folderPath = Path.Combine(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, DL_FOLDER_PATH);
 
             if (!Directory.Exists(folderPath))
             {
