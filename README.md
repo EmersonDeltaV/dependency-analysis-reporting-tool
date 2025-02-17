@@ -61,7 +61,7 @@ dotnet restore
 
     **NOTE**: Please use double backslash `\\` to indicate the path.
 
-#### Configure the Tool for Auto-Download of Reports
+#### (Optional) Configure the Tool for Auto-Download of Reports
 
 1. Ensure that the Token provided in the config.json file has Read/Write access to the Black Duck API.
 2. Set the value of the `EnableDownloadTool` property under `FeatureToggles` in the config.json file to `true`.
