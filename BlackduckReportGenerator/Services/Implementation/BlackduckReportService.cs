@@ -11,34 +11,43 @@ namespace BlackduckReportGeneratorTool.Services.Implementation
         private readonly IBlackduckApiService blackduckApiService = blackduckApiService;
         private readonly IConfiguration configuration = configuration;
 
-        public Task<string> DownloadReport()
+        public async Task<string> DownloadVulnerabilityReport()
         {
+            // Attempt to create a vulnerability status report
             var isCreateSuccess = blackduckApiService.CreateVulnerabilityStatusReport();
 
+            // If report creation fails, return an empty string
             if (!isCreateSuccess.Result)
             {
-                return Task.FromResult(string.Empty);
+                return string.Empty;
             }
 
             var reportId = string.Empty;
             int tryCount = 0;
 
+            // Get the maximum number of tries from the configuration
             var maxTries = configuration.GetSection(KEY_MAX_TRIES).Get<int>();
+
+            // Try to get the latest vulnerability report ID until successful or max tries reached
             while (reportId == string.Empty && tryCount < maxTries)
             {
-                Thread.Sleep(20000);
-                reportId = blackduckApiService.GetLatestVulnerabilityReportId().Result;
+                // Wait for 20 seconds before each retry
+                await Task.Delay(20000);
+                reportId = blackduckApiService.GetLatestVulnerabilityStatusReportId().Result;
                 tryCount++;
             }
 
+            // If no report ID is obtained, return an empty string
             if (reportId == string.Empty)
             {
-                return Task.FromResult(string.Empty);
+                return string.Empty;
             }
 
-            Task.Run(() => blackduckApiService.DownloadReport(reportId)).Wait();
+            // Download the report asynchronously and wait for completion
+            string reportPath = blackduckApiService.SaveReport(reportId).Result;
 
-            return Task.FromResult(reportId);
+            // Return the report path
+            return reportPath;
         }
     }
 }

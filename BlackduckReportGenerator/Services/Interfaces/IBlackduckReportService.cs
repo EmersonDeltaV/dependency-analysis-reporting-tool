@@ -2,6 +2,6 @@
 {
     public interface IBlackduckReportService
     {
-        Task<string> DownloadReport();
+        Task<string> DownloadVulnerabilityReport();
     }
 }

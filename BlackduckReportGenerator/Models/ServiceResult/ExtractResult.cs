@@ -2,6 +2,6 @@
 {
     public class ExtractResult(string resultPath)
     {
-        public string ResultPath { get; set; } = resultPath;
+        public string DestinationPath { get; set; } = resultPath;
     }
 }

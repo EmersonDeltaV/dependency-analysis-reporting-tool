@@ -126,7 +126,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<string> GetLatestVulnerabilityReportId()
+        public async Task<string> GetLatestVulnerabilityStatusReportId()
         {
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -151,7 +151,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             return bool.Parse(latestReport?["complete"]?.ToString() ?? bool.FalseString) ? latestReportId : string.Empty;
         }
 
-        public async Task<string> DownloadReport(string reportId)
+        public async Task<string> SaveReport(string reportId)
         {
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -183,7 +183,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
 
             _logger.LogInformation($"File Saved");
 
-            return "Downloaded";
+            return filePath;
 
         }
 

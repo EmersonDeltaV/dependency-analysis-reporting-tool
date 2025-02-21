@@ -2,9 +2,9 @@
 {
     Task<bool> CreateVulnerabilityStatusReport();
 
-    Task<string> GetLatestVulnerabilityReportId();
+    Task<string> GetLatestVulnerabilityStatusReportId();
 
-    Task<string> DownloadReport(string reportId);
+    Task<string> SaveReport(string reportId);
 
     Task<string> GetRecommendedFix(string CVECode);
 
