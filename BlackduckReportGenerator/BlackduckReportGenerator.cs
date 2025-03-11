@@ -28,12 +28,12 @@ namespace BlackduckReportGeneratorTool
 
         // This method generates a report by downloading a vulnerability report, extracting it, and transferring the extracted files.
         // It also handles cleanup of the downloaded and extracted files, and logs the process.
-        public void GenerateReport()
+        public async Task GenerateReport()
         {
             try
             {
                 // Download the vulnerability report and get the report path
-                var reportPath = blackduckReportService.DownloadVulnerabilityReport().Result;
+                var reportPath = await blackduckReportService.DownloadVulnerabilityReport();
 
                 // Extract the downloaded report files.
                 var extractResult = fileService.ExtractFiles(reportPath);
@@ -53,6 +53,7 @@ namespace BlackduckReportGeneratorTool
                 // Cleanup the downloaded and extracted files.
                 fileService.DeleteFile(reportPath);
                 fileService.DeleteDirectory(extractResult.DestinationPath);
+
             }
             catch (Exception ex)
             {
@@ -61,11 +62,12 @@ namespace BlackduckReportGeneratorTool
             }
         }
 
-        public void Cleanup()
+        public Task Cleanup()
         {
             Directory.GetFiles(DestinationPath, "*.csv", SearchOption.AllDirectories)
                 .ToList().ForEach(File.Delete);
             Directory.Delete(DestinationPath);
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

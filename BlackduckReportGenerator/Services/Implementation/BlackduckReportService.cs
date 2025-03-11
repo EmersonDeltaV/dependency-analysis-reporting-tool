@@ -14,10 +14,10 @@ namespace BlackduckReportGeneratorTool.Services.Implementation
         public async Task<string> DownloadVulnerabilityReport()
         {
             // Attempt to create a vulnerability status report
-            var isCreateSuccess = blackduckApiService.CreateVulnerabilityStatusReport();
+            var isCreateSuccess = await blackduckApiService.CreateVulnerabilityStatusReport();
 
             // If report creation fails, return an empty string
-            if (!isCreateSuccess.Result)
+            if (!isCreateSuccess)
             {
                 return string.Empty;
             }
@@ -33,7 +33,7 @@ namespace BlackduckReportGeneratorTool.Services.Implementation
             {
                 // Wait for 20 seconds before each retry
                 await Task.Delay(20000);
-                reportId = blackduckApiService.GetLatestVulnerabilityStatusReportId().Result;
+                reportId = await blackduckApiService.GetLatestVulnerabilityStatusReportId();
                 tryCount++;
             }
 
@@ -44,7 +44,7 @@ namespace BlackduckReportGeneratorTool.Services.Implementation
             }
 
             // Download the report asynchronously and wait for completion
-            string reportPath = blackduckApiService.SaveReport(reportId).Result;
+            string reportPath = await blackduckApiService.SaveReport(reportId);
 
             // Return the report path
             return reportPath;

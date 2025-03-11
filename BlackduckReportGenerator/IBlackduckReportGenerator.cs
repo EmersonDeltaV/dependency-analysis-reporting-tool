@@ -8,8 +8,8 @@ namespace BlackduckReportGeneratorTool
 {
     public interface IBlackduckReportGenerator
     {
-        void GenerateReport();
+        Task GenerateReport();
 
-        void Cleanup();
+        Task Cleanup();
     }
 }

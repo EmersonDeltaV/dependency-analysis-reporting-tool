@@ -22,7 +22,7 @@ namespace BlackduckReportGeneratorTool
                 {
                     if (ConfigService.Config.FeatureToggles.EnableDownloadTool)
                     {
-                        blackduckReportGenerator.GenerateReport();
+                        await blackduckReportGenerator.GenerateReport();
                     }
 
                     SeriLogger.Information("No previous results found. Skipping comparison.");
@@ -33,7 +33,7 @@ namespace BlackduckReportGeneratorTool
 
                     if (ConfigService.Config.FeatureToggles.EnableDownloadTool)
                     {
-                        blackduckReportGenerator.Cleanup();
+                        await blackduckReportGenerator.Cleanup();
                     }
                 }
                 else
