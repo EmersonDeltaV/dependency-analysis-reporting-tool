@@ -126,7 +126,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<string> GetLatestVulnerabilityStatusReportId()
+        public async Task<string> GetLatestVulnerabilityReportId()
         {
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -145,10 +145,34 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             var latestReport = jsonContent["items"]?.OrderByDescending(item => item["createdAt"])?.FirstOrDefault();
             var latestReportId = latestReport?["id"]?.ToString() ?? string.Empty;
 
-            _logger.LogInformation($"GetLatestVulnerabilityReport Id: {latestReport?["id"]}; " +
+            _logger.LogInformation($"GetLatestVulnerabilityReportId Id: {latestReport?["id"]}; " +
                 $"Complete Status: {latestReport?["complete"]?.ToString()}");
 
-            return bool.Parse(latestReport?["complete"]?.ToString() ?? bool.FalseString) ? latestReportId : string.Empty;
+            return latestReportId;
+        }
+
+        public async Task<bool> GetVulnerabilityStatusReportCompleteStatus(string reportId)
+        {
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
+
+            using var response = await httpClient.GetAsync("/api/v1/vulnerability-reports?ascending=false&limit=100&offset=0&sortField=finishedAt");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Error getting report.");
+                return false;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var jsonContent = JObject.Parse(content);
+            var report = jsonContent["items"]?.Where(item => item["id"].ToString() == reportId)?.FirstOrDefault();
+
+            _logger.LogInformation($"GetVulnerabilityStatusReportCompleteStatus Id: {report?["id"]}; " +
+                $"Complete Status: {report?["complete"]?.ToString()}");
+
+            return bool.Parse(report?["complete"]?.ToString() ?? bool.FalseString);
         }
 
         public async Task<string> SaveReport(string reportId)

@@ -35,6 +35,12 @@ namespace BlackduckReportGeneratorTool
                 // Download the vulnerability report and get the report path
                 var reportPath = await blackduckReportService.DownloadVulnerabilityReport();
 
+                // If the report path is empty, throw an exception.
+                if (string.IsNullOrEmpty(reportPath)) 
+                {
+                    throw new Exception("Report download failed.");
+                }
+
                 // Extract the downloaded report files.
                 var extractResult = fileService.ExtractFiles(reportPath);
 

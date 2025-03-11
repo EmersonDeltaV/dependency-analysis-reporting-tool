@@ -2,7 +2,9 @@
 {
     Task<bool> CreateVulnerabilityStatusReport();
 
-    Task<string> GetLatestVulnerabilityStatusReportId();
+    Task<string> GetLatestVulnerabilityReportId();
+
+    Task<bool> GetVulnerabilityStatusReportCompleteStatus(string reportId);
 
     Task<string> SaveReport(string reportId);
 
