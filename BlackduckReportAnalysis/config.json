@@ -10,5 +10,49 @@
   "ProductVersion": "Version Number",
   "ProductIteration": "Product Iteration (PI) or Date",
   "PreviousResults": "",
-  "CurrentResults": ""
+  "CurrentResults": "",
+  "DownloadConfiguration": {
+    "VulnerabilityReportParameters": {
+      "reportFormat": "CSV",
+      "projectLinks": [
+      ]
+    },
+    "DownloadParameters": {
+      "MaxTries": 20
+    }
+  },
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.File" ],
+    "MinimumLevel": {
+      "Default": "Debug",
+      "Override": {
+        "Microsoft": "Error",
+        "System": "Debug"
+      }
+    },
+    "Enrich": [ "FromLogContext", "WithMachineName", "WithProcessId", "WithThreadId" ],
+    "WriteTo": [
+      {
+        "Name": "File",
+        "Args": {
+          "path": "Log\\Blackduck_Report_.log",
+          "outputTemplate": "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level}] [{SourceContext}] [{EventId}] {Message}{NewLine}{Exception}",
+          "rollOnFileSizeLimit": true,
+          "fileSizeLimitBytes": 4194304,
+          "retainedFileCountLimit": 15,
+          "rollingInterval": "Day"
+        }
+      },
+      {
+        "Name": "Console",
+        "Args": {
+          "theme": "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Code, Serilog.Sinks.Console",
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} <s:{SourceContext}>{NewLine}{Exception}"
+        }
+      }
+    ]
+  },
+  "FeatureToggles": {
+    "EnableDownloadTool": false
+  }
 }

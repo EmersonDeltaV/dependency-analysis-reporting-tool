@@ -1,45 +1,43 @@
 ﻿using BlackduckReportAnalysis;
+using BlackduckReportGeneratorTool.Services.Implementation;
+using Serilog;
+using BlackduckReportGeneratorTool.Services.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using BlackduckReportGeneratorTool;
+using Microsoft.Extensions.Configuration;
 
 class Program
 {
     static async Task Main(string[] args)
     {
-        try
-        {
-            ConfigService.ReadConfigJSON();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-            SeriLogger.ConfigureSerilog();
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("config.json")
+            .Build();
 
-            if(ConfigService.Config.PreviousResults == string.Empty || ConfigService.Config.CurrentResults == string.Empty)
-            {
-                
-                SeriLogger.Information("No previous results found. Skipping comparison.");
+        builder.Configuration.AddConfiguration(configuration);
 
-                ExcelService.Initialize();
-                await CsvService.AnalyzeReport();
-                ExcelService.SaveReport();
+        var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration)
+                                                .Enrich.FromLogContext()
+                                                .CreateLogger();
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog(logger);
 
-                return;
-            }
-            else
-            {
-                ExcelService.CompareExcelFiles(ConfigService.Config.CurrentResults, ConfigService.Config.PreviousResults, ConfigService.Config.OutputFilePath);
-            }
-        }
-        catch(HttpRequestException)
-        {
-            SeriLogger.Error($"Could not reach {ConfigService.Config.BaseUrl}. Please ensure that you are connected to the corporate VPN.");
-        }
-        catch (ConfigException ex)
-        {
-            Console.WriteLine($"ERROR: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            SeriLogger.Error($"Encountered an exception: {ex.Message}");
-        }
+        builder.Services.AddHostedService<BlackduckReportAnalysisProgram>();
+        builder.Services.AddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
+        builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
+        builder.Services.AddSingleton<IBlackduckApiService, BlackduckReportGeneratorTool.Integration.Implementation.BlackduckApiService>();
+        builder.Services.AddSingleton<IFileService, FileService>();
 
-        Console.WriteLine("Press any key to close this window...");
-        Console.ReadLine();
+        using IHost host = builder.Build();
+
+        host.Start();
+
+        return;
+
     }
 }
