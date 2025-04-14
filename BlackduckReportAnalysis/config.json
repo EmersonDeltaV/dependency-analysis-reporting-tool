@@ -1,10 +1,10 @@
 {
-  "ReportFolderPath": "",
-  "OutputFilePath": "",
+  "ReportFolderPath": "C:\\BlackDuck\\Report\\Orig",
+  "OutputFilePath": "C:\\BlackDuck\\Report",
   "IncludeTransitiveDependency": "false",
-  "Token": "",
+  "Token": "ZWI1YTFiYTMtOWYxZC00OWFhLWJjZGItODE3OGFkMmUyZDhkOmZiNmZjZTY5LTQ1MTEtNDZhZi1iOWI2LWVlMjZkNDFiZjliYQ==",
   "BaseUrl": "https://blackduck.emrsn.org",
-  "LogPath": "",
+  "LogPath": "C:\\BlackDuck\\Report",
   "ProjectVersionsToInclude": "",
   "ProductName": "Product Name",
   "ProductVersion": "Version Number",
@@ -14,7 +14,8 @@
   "DownloadConfiguration": {
     "VulnerabilityReportParameters": {
       "reportFormat": "CSV",
-      "projectLinks": [
+      "ProjectLinks": [
+        "https://blackduck.emrsn.org/api/projects/8d20d706-0205-466f-a004-2c9462f3a606"
       ]
     },
     "DownloadParameters": {
