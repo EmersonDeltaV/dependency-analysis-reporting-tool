@@ -1,4 +1,4 @@
-namespace EOLAnalysisLib.Models
+namespace DART.EOLAnalysis.Models
 {
     public class Repository
     {
