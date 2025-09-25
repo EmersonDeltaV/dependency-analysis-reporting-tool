@@ -1,22 +1,41 @@
 ﻿using BlackduckReportAnalysis.Models;
+using BlackduckReportGeneratorTool;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace BlackduckReportAnalysis
 {
-    public static class CsvService
+    public class CsvService : ICsvService
     {
-        private static int projectNameIndex;
-        private static int componentOriginIdIndex;
-        private static int securityRiskIndex;
-        private static int vulnerabilityIdIndex;
-        private static int matchTypeIndex;
-        private static int versionIndex;
+        private readonly IBlackduckApiService _blackduckApiService;
+        private readonly IExcelService _excelService;
+        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly Config _config;
+
+        private int projectNameIndex;
+        private int componentOriginIdIndex;
+        private int securityRiskIndex;
+        private int vulnerabilityIdIndex;
+        private int matchTypeIndex;
+        private int versionIndex;
+
+        public CsvService(IBlackduckApiService blackduckApiService,
+                          IExcelService excelService,
+                          IConfiguration configuration,
+                          ILogger<BlackduckReportAnalysisProgram> logger)
+        {
+            _blackduckApiService = blackduckApiService;
+            _excelService = excelService;
+            _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
+            _logger = logger;
+        }
 
         /// <summary>
         /// Analyzes Blackduck reports by processing CSV files.
         /// </summary>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public static async Task AnalyzeReport()
+        public async Task AnalyzeReport()
         {
             var csvFiles = GetCsvFiles();
 
@@ -28,7 +47,7 @@ namespace BlackduckReportAnalysis
 
                 if (!FindHeaderIndex(headers))
                 {
-                    SeriLogger.Error($"Required columns not found in the {csvFile}. Skipping this file.");
+                    _logger.LogError($"Required columns not found in the {csvFile}. Skipping this file.");
                     continue;
                 }
 
@@ -41,32 +60,32 @@ namespace BlackduckReportAnalysis
                         continue;
                     }
 
-                    var recommendedFix = await BlackduckApiService.GetRecommendedFix(rowDetails.VulnerabilityId);
+                    var recommendedFix = await _blackduckApiService.GetRecommendedFix(rowDetails.VulnerabilityId);
 
                     rowDetails.RecommendedFix = recommendedFix;
 
-                    ExcelService.PopulateRow(rowDetails);
+                    _excelService.PopulateRow(rowDetails);
                 }
             }
         }
 
-        private static string[] GetCsvFiles()
+        private string[] GetCsvFiles()
         {
-            if (!ConfigService.Config.IncludeTransitiveDependency)
+            if (!_config.IncludeTransitiveDependency)
             {
-                SeriLogger.Information("Skipping all Transitive Dependency as configured in config.json.");
+                _logger.LogInformation("Skipping all Transitive Dependency as configured in config.json.");
             }
 
-            var reportFolderPath = ConfigService.Config.ReportFolderPath;
+            var reportFolderPath = _config.ReportFolderPath;
 
             var csvFiles = Directory.GetFiles(reportFolderPath, "*.csv", SearchOption.AllDirectories);
 
-            SeriLogger.Information($"Found {csvFiles.Length} csv file/s in {reportFolderPath}.");
+            _logger.LogInformation($"Found {csvFiles.Length} csv file/s in {reportFolderPath}.");
 
             return csvFiles;
         }
 
-        private static bool FindHeaderIndex(string[] headers)
+        private bool FindHeaderIndex(string[] headers)
         {
             projectNameIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.ProjectName, StringComparison.OrdinalIgnoreCase));
             componentOriginIdIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.ComponentOriginId, StringComparison.OrdinalIgnoreCase));
@@ -78,15 +97,15 @@ namespace BlackduckReportAnalysis
             return projectNameIndex != -1 && componentOriginIdIndex != -1 && securityRiskIndex != -1 && vulnerabilityIdIndex != -1;
         }
 
-        private static RowDetails? ExtractRowDetails(string csvRowData)
+        private RowDetails? ExtractRowDetails(string csvRowData)
         {
             var parsedRow = ParseCsvRow(csvRowData);
             var matchType = parsedRow[matchTypeIndex];
             var version = parsedRow[versionIndex];
 
-            var versions = ConfigService.Config.ProjectVersionsToInclude.Split(',');
+            var versions = _config.ProjectVersionsToInclude.Split(',');
 
-            if (!ConfigService.Config.IncludeTransitiveDependency &&
+            if (!_config.IncludeTransitiveDependency &&
                 matchType.Equals("Transitive Dependency", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
@@ -94,7 +113,7 @@ namespace BlackduckReportAnalysis
 
             if (!versions.Contains(string.Empty) && !versions.Contains(version))
             {
-                SeriLogger.Information($"This row with version {version} does not match the required version. Skipping this row.");
+                _logger.LogInformation($"This row with version {version} does not match the required version. Skipping this row.");
                 return null;
             }
 
@@ -111,7 +130,7 @@ namespace BlackduckReportAnalysis
             return rowDetails;
         }
 
-        private static string[] ParseCsvRow(string row)
+        private string[] ParseCsvRow(string row)
         {
             var pattern = "(?<=^|,)(\"(?:[^\"]|\"\")*\"|[^,]*)";
             var matches = Regex.Matches(row, pattern);

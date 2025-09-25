@@ -28,6 +28,9 @@ class Program
         builder.Logging.AddSerilog(logger);
 
         builder.Services.AddHostedService<BlackduckReportAnalysisProgram>();
+        builder.Services.AddSingleton<IConfiguration>(configuration);
+        builder.Services.AddSingleton<ICsvService, CsvService>();
+        builder.Services.AddSingleton<IExcelService, ExcelService>();
         builder.Services.AddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
         builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
         builder.Services.AddSingleton<IBlackduckApiService, BlackduckReportGeneratorTool.Integration.Implementation.BlackduckApiService>();

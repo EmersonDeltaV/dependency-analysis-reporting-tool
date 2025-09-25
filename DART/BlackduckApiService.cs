@@ -14,12 +14,35 @@ namespace BlackduckReportAnalysis
             ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
         };
 
-        private static readonly HttpClient httpClient = new HttpClient(httpClientHandler)
-        {
-            BaseAddress = new Uri(ConfigService.Config.BaseUrl)
-        };
-
+        private static HttpClient? _httpClient;
+        private static readonly object _lockObject = new object();
         private static string BearerToken = string.Empty;
+
+        private static HttpClient HttpClient
+        {
+            get
+            {
+                if (_httpClient == null)
+                {
+                    lock (_lockObject)
+                    {
+                        if (_httpClient == null)
+                        {
+                            // Initialize config if not already done
+                            if (ConfigService.Config == null)
+                            {
+                                ConfigService.ReadConfigJSON();
+                            }
+                            _httpClient = new HttpClient(httpClientHandler)
+                            {
+                                BaseAddress = new Uri(ConfigService.Config.BaseUrl)
+                            };
+                        }
+                    }
+                }
+                return _httpClient;
+            }
+        }
 
         /// <summary>
         /// Retrieves the recommended fix for a given vulnerability ID.
@@ -44,11 +67,11 @@ namespace BlackduckReportAnalysis
 
             await GetBearerToken();
 
-            httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.vulnerability-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
+            HttpClient.DefaultRequestHeaders.Clear();
+            HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.vulnerability-4+json");
+            HttpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
-            var response = await httpClient.GetAsync($"api/vulnerabilities/{cveId}");
+            var response = await HttpClient.GetAsync($"api/vulnerabilities/{cveId}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -71,11 +94,11 @@ namespace BlackduckReportAnalysis
         {
             if (!string.IsNullOrEmpty(BearerToken)) return;
 
-            httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.user-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"token {ConfigService.Config.Token}");
+            HttpClient.DefaultRequestHeaders.Clear();
+            HttpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.user-4+json");
+            HttpClient.DefaultRequestHeaders.Add("Authorization", $"token {ConfigService.Config.BlackduckToken}");
 
-            var responseToken = await httpClient.PostAsync("api/tokens/authenticate", null);
+            var responseToken = await HttpClient.PostAsync("api/tokens/authenticate", null);
 
             if (!responseToken.IsSuccessStatusCode)
             {

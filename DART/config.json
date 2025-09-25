@@ -2,7 +2,7 @@
   "ReportFolderPath": "",
   "OutputFilePath": "",
   "IncludeTransitiveDependency": "false",
-  "Token": "",
+  "BlackduckToken": "",
   "BaseUrl": "https://blackduck.emrsn.org",
   "LogPath": "",
   "ProjectVersionsToInclude": "",

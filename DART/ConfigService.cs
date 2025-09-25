@@ -30,7 +30,7 @@ namespace BlackduckReportAnalysis
 
                 if (string.IsNullOrWhiteSpace(Config.ReportFolderPath) ||
                     string.IsNullOrWhiteSpace(Config.OutputFilePath) ||
-                    string.IsNullOrWhiteSpace(Config.Token) ||
+                    string.IsNullOrWhiteSpace(Config.BlackduckToken) ||
                     string.IsNullOrWhiteSpace(Config.BaseUrl))
                 {
                     throw new ConfigException("Please ensure that all configurations are provided in config.json.");

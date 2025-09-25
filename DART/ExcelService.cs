@@ -1,40 +1,55 @@
 ﻿using BlackduckReportAnalysis.Models;
+using BlackduckReportGeneratorTool;
 using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace BlackduckReportAnalysis
 {
-    public static class ExcelService
+    public class ExcelService : IExcelService
     {
-        private static int currentRow = 8;
-        private static XLWorkbook xLWorkbook;
-        private static IXLWorksheet worksheet;
+        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly Config _config;
+
+        private int currentRow = 8;
+        private XLWorkbook xLWorkbook;
+        private IXLWorksheet worksheet;
+
+        public ExcelService(IConfiguration configuration,
+                            ILogger<BlackduckReportAnalysisProgram> logger)
+        {
+            _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
+            _logger = logger;
+
+            Initialize();
+        }
 
         /// <summary>
         /// Initializes the Excel workbook and worksheet for Black Duck Security Risks summary report.
         /// </summary>
-        public static void Initialize()
+        private void Initialize()
         {
             xLWorkbook = new XLWorkbook();
             worksheet = xLWorkbook.Worksheets.Add("Black Duck Security Risks");
             FormatHeader(worksheet);
         }
 
-        private static void FormatHeader(IXLWorksheet worksheet)
+        private void FormatHeader(IXLWorksheet worksheet)
         {
             //format general details detail
             worksheet.Range(1, 1, 1, 11).Merge();
             worksheet.Range(2, 1, 2, 11).Merge();
             worksheet.Range(3, 1, 3, 11).Merge();
 
-            worksheet.Cell(1, 1).Value = ConfigService.Config.ProductName;
+            worksheet.Cell(1, 1).Value = _config.ProductName;
             worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(2, 1).Value = ConfigService.Config.ProductVersion;
+            worksheet.Cell(2, 1).Value = _config.ProductVersion;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(3, 1).Value = ConfigService.Config.ProductIteration;
+            worksheet.Cell(3, 1).Value = _config.ProductIteration;
             worksheet.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             var cellBefore = worksheet.Cell(4, 1);
@@ -87,7 +102,7 @@ namespace BlackduckReportAnalysis
         /// Populates a row in the Black Duck Security Risks summary report with the provided row details.
         /// </summary>
         /// <param name="rowDetails">The details of the row to be populated.</param>
-        public static void PopulateRow(RowDetails rowDetails)
+        public void PopulateRow(RowDetails rowDetails)
         {
             worksheet.Cell(currentRow, 1).Value = rowDetails.ApplicationName;
             worksheet.Cell(currentRow, 2).Value = rowDetails.SoftwareComponent;
@@ -99,11 +114,11 @@ namespace BlackduckReportAnalysis
 
             if (string.IsNullOrEmpty(rowDetails.RecommendedFix))
             {
-                SeriLogger.Warning($"Row [{currentRow}] No recommended fix found for {rowDetails.ApplicationName} | {rowDetails.SoftwareComponent} | {rowDetails.VulnerabilityId}");
+                _logger.LogWarning($"Row [{currentRow}] No recommended fix found for {rowDetails.ApplicationName} | {rowDetails.SoftwareComponent} | {rowDetails.VulnerabilityId}");
             }
             else
             {
-                SeriLogger.Information($"Row [{currentRow}] {rowDetails.ApplicationName} | {rowDetails.SoftwareComponent} | {rowDetails.VulnerabilityId}");
+                _logger.LogInformation($"Row [{currentRow}] {rowDetails.ApplicationName} | {rowDetails.SoftwareComponent} | {rowDetails.VulnerabilityId}");
             }
 
             currentRow++;
@@ -112,15 +127,15 @@ namespace BlackduckReportAnalysis
         /// <summary>
         /// Saves the Black Duck Security Risks summary report.
         /// </summary>
-        public static void SaveReport()
+        public void SaveReport()
         {
             worksheet.Columns().AdjustToContents();
-            xLWorkbook.SaveAs(Path.Combine(ConfigService.Config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
-            SeriLogger.Information("Blackduck Analysis is completed and report was generated successfully.");
+            xLWorkbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            _logger.LogInformation("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();
         }
 
-        public static void CompareExcelFiles(string filePath1, string filePath2, string outputFilePath)
+        public void CompareExcelFiles(string filePath1, string filePath2, string outputFilePath)
         {
             using (var workbook1 = new XLWorkbook(filePath1))
             using (var workbook2 = new XLWorkbook(filePath2))
@@ -193,13 +208,13 @@ namespace BlackduckReportAnalysis
                     }
                     else
                     {
-                        SeriLogger.Information("Found 1 new finding.");
+                        _logger.LogInformation("Found 1 new finding.");
                     }
                 }
 
                 FormatHeader(outputWorksheet);
                 outputWorksheet.Columns().AdjustToContents();
-                outputWorkbook.SaveAs(Path.Combine(ConfigService.Config.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+                outputWorkbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             }
         }
     }

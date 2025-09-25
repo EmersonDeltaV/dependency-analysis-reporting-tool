@@ -8,17 +8,43 @@ namespace BlackduckReportAnalysis
     /// </summary>
     public static class SeriLogger
     {
-        private static Logger Logger;
+        private static Logger? _logger;
+        private static readonly object _lockObject = new object();
+
+        private static Logger Logger
+        {
+            get
+            {
+                if (_logger == null)
+                {
+                    lock (_lockObject)
+                    {
+                        if (_logger == null)
+                        {
+                            // Initialize config if not already done
+                            if (ConfigService.Config == null)
+                            {
+                                ConfigService.ReadConfigJSON();
+                            }
+                            _logger = new LoggerConfiguration()
+                                .WriteTo.Console()
+                                .WriteTo.File(Path.Combine(ConfigService.Config.LogPath, $"log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt"))
+                                .CreateLogger();
+                        }
+                    }
+                }
+                return _logger;
+            }
+        }
 
         /// <summary>
         /// Configures Serilog with the specified logging options.
         /// </summary>
+        [Obsolete("SeriLogger now initializes automatically. This method is no longer needed.")]
         public static void ConfigureSerilog()
         {
-            Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .WriteTo.File(Path.Combine(ConfigService.Config.LogPath, $"log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt"))
-                .CreateLogger();
+            // This method is now obsolete as the logger initializes automatically
+            _ = Logger; // Force initialization
         }
 
         /// <summary>

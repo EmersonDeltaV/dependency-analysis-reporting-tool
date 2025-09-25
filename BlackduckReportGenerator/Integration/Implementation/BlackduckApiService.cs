@@ -12,7 +12,7 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
     {
         private const string KEY_VULNERABILITY_REPORT_PARAMETERS = "DownloadConfiguration:VulnerabilityReportParameters";
         private const string KEY_BASEURL = "BaseUrl";
-        private const string KEY_TOKEN = "Token";
+        private const string KEY_TOKEN = "BlackduckToken";
         private const string KEY_REPORT_FOLDER_PATH = "ReportFolderPath";
         private const string DL_FOLDER_PATH = "Downloaded";
 
