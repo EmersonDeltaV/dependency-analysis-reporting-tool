@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using BlackduckReportGeneratorTool;
 using Microsoft.Extensions.Configuration;
+using EOLAnalysisLib;
 
 class Program
 {
@@ -35,6 +36,7 @@ class Program
         builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
         builder.Services.AddSingleton<IBlackduckApiService, BlackduckReportGeneratorTool.Integration.Implementation.BlackduckApiService>();
         builder.Services.AddSingleton<IFileService, FileService>();
+        builder.Services.AddScoped<IEOLAnalysisService, EOLAnalysisService>();
 
         using IHost host = builder.Build();
 

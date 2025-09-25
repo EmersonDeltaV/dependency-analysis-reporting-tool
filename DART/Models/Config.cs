@@ -15,5 +15,6 @@
         public string PreviousResults { get; set; } = string.Empty;
         public string CurrentResults { get; set; } = string.Empty;
         public FeatureToggles FeatureToggles { get; set; } = new FeatureToggles();
+        public EOLAnalysisConfig EOLAnalysis { get; set; } = new();
     }
 }
