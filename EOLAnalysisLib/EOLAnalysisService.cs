@@ -44,7 +44,7 @@ namespace DART.EOLAnalysis
                         var pathParts = gitItem.Path.Split('/');
                         var projectName = pathParts.Length > 1 ? pathParts[^2] : repository.Name;
 
-                        _logger.LogDebug("Analyzing project: {ProjectName}", projectName);
+                        _logger.LogInformation("Analyzing project: {ProjectName}", projectName);
 
                         // Get the .csproj file content
                         var csProjContent = await azureClient.GetFileContentAsync(internalRepo, gitItem.Path);
@@ -91,7 +91,7 @@ namespace DART.EOLAnalysis
 
                                 results.Add(packageData);
 
-                                _logger.LogDebug("Package analyzed: {PackageId}", id);
+                                _logger.LogInformation("Package analyzed: {PackageId}", id);
                             }
                             else
                             {
