@@ -1,4 +1,6 @@
-﻿namespace BlackduckReportAnalysis.Models
+﻿using EOLAnalysisLib.Models;
+
+namespace BlackduckReportAnalysis.Models
 {
     public class Config
     {

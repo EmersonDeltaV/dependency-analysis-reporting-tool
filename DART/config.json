@@ -68,6 +68,7 @@
     ]
   },
   "FeatureToggles": {
-    "EnableDownloadTool": false
+    "EnableDownloadTool": true,
+    "EnableEOLAnalysis": true
   }
 }

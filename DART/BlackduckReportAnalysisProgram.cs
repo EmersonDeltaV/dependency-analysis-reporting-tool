@@ -3,6 +3,7 @@ using BlackduckReportAnalysis.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using EOLAnalysisLib;
 
 namespace BlackduckReportGeneratorTool
 {
@@ -11,6 +12,7 @@ namespace BlackduckReportGeneratorTool
         private readonly IBlackduckReportGenerator _blackduckReportGenerator;
         private readonly ICsvService _csvService;
         private readonly IExcelService _excelService;
+        private readonly IEOLAnalysisService _eolAnalysisService;
         private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
         private readonly Config _config;
 
@@ -18,12 +20,14 @@ namespace BlackduckReportGeneratorTool
                                               IConfiguration configuration,
                                               ICsvService csvService,
                                               IExcelService excelService,
+                                              IEOLAnalysisService eolAnalysisService,
                                               ILogger<BlackduckReportAnalysisProgram> logger)
         {
             _blackduckReportGenerator = blackduckReportGenerator;
             _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
             _csvService = csvService;
             _excelService = excelService;
+            _eolAnalysisService = eolAnalysisService;
             _logger = logger;
         }
 
@@ -42,7 +46,37 @@ namespace BlackduckReportGeneratorTool
                     _logger.LogInformation("No previous results found. Skipping comparison.");
 
                     await _csvService.AnalyzeReport();
-                    _excelService.SaveReport();
+
+                    // Get workbook for potential additional sheets
+                    var workbook = _excelService.GetWorkbook();
+
+                    // Add EOL Analysis sheet if enabled and configured
+                    if (_config.FeatureToggles.EnableEOLAnalysis &&
+                        _config.EOLAnalysis?.Repositories?.Count > 0)
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Starting EOL Analysis...");
+                            var eolData = await _eolAnalysisService.AnalyzeRepositoriesAsync(_config.EOLAnalysis);
+
+                            if (eolData != null && eolData.Count > 0)
+                            {
+                                await _excelService.AddEOLAnalysisSheetAsync(workbook, eolData);
+                                _logger.LogInformation($"EOL Analysis completed. Found {eolData.Count} packages.");
+                            }
+                            else
+                            {
+                                _logger.LogInformation("EOL Analysis completed but no packages were found.");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"EOL Analysis failed: {ex.Message}");
+                        }
+                    }
+
+                    // Save the complete workbook
+                    _excelService.SaveWorkbook(workbook);
 
                     if (_config.FeatureToggles.EnableDownloadTool)
                     {
