@@ -1,4 +1,4 @@
-﻿using EOLAnalysisLib.Models;
+﻿using DART.EOLAnalysis.Models;
 
 namespace BlackduckReportAnalysis.Models
 {

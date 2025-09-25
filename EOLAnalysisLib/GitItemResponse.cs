@@ -1,4 +1,4 @@
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     // Response models
     public class GitItemsResponse // Changed from private to public

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
-using EOLAnalysisLib.Models;
+using DART.EOLAnalysis.Models;
 
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     public class EOLAnalysisService : IEOLAnalysisService
     {
@@ -27,7 +27,7 @@ namespace EOLAnalysisLib
                     _logger.LogInformation("Processing repository: {RepositoryName} ({RepositoryUrl})", repository.Name, repository.Url);
 
                     // Create internal Repository instance (original class with ParseUrl) and parse URL
-                    var internalRepo = new global::Repository
+                    var internalRepo = new Repository
                     {
                         Name = repository.Name,
                         Url = repository.Url,

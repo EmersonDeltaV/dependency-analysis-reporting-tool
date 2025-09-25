@@ -3,7 +3,7 @@ using BlackduckReportAnalysis.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using EOLAnalysisLib;
+using DART.EOLAnalysis;
 
 namespace BlackduckReportGeneratorTool
 {

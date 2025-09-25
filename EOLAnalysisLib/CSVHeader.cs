@@ -1,4 +1,4 @@
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     internal class CSVHeader
     {

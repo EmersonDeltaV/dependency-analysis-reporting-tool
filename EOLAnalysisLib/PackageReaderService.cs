@@ -1,6 +1,6 @@
 using Microsoft.Build.Construction;
 
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     internal static class PackageReaderService
     {

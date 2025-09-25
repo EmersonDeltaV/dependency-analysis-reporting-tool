@@ -1,11 +1,10 @@
 ﻿using BlackduckReportAnalysis.Models;
 using BlackduckReportGeneratorTool;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
+using DART.EOLAnalysis.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
-using EOLAnalysisLib.Models;
 
 namespace BlackduckReportAnalysis
 {

@@ -1,5 +1,5 @@
 ﻿using BlackduckReportAnalysis.Models;
-using EOLAnalysisLib.Models;
+using DART.EOLAnalysis.Models;
 using ClosedXML.Excel;
 
 namespace BlackduckReportAnalysis

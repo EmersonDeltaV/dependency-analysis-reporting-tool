@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlackduckReportGenerator\BlackduckReportGeneratorTool.csproj" />
-    <ProjectReference Include="..\EOLAnalysisLib\EOLAnalysisLib.csproj" />
+    <ProjectReference Include="..\EOLAnalysisLib\DART.EOLAnalysis.csproj" />
   </ItemGroup>
 
   <ItemGroup>

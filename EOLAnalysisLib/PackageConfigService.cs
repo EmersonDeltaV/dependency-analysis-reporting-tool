@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     internal static class PackageConfigService
     {

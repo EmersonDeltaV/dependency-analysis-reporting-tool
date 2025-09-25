@@ -2,7 +2,7 @@ using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     internal static class NugetMetaData
     {

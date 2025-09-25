@@ -1,6 +1,6 @@
-using EOLAnalysisLib.Models;
+using DART.EOLAnalysis.Models;
 
-namespace EOLAnalysisLib
+namespace DART.EOLAnalysis
 {
     public interface IEOLAnalysisService
     {
