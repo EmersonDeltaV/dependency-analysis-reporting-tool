@@ -21,6 +21,21 @@
       "MaxTries": 20
     }
   },
+  "EOLAnalysis": {
+    "Pat": "",
+    "Repositories": [
+      {
+        "Name": "",
+        "Url": "",
+        "Branch": ""
+      },
+      {
+        "Name": "",
+        "Url": "",
+        "Branch": ""
+      }
+    ]
+  },
   "Serilog": {
     "Using": [ "Serilog.Sinks.File" ],
     "MinimumLevel": {
@@ -53,6 +68,7 @@
     ]
   },
   "FeatureToggles": {
-    "EnableDownloadTool": false
+    "EnableDownloadTool": true,
+    "EnableEOLAnalysis": true
   }
 }

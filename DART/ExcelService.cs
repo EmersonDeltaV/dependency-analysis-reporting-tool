@@ -1,7 +1,7 @@
 ﻿using BlackduckReportAnalysis.Models;
 using BlackduckReportGeneratorTool;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
+using DART.EOLAnalysis.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
@@ -133,6 +133,82 @@ namespace BlackduckReportAnalysis
             xLWorkbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();
+        }
+
+        /// <summary>
+        /// Gets the current workbook instance for adding additional sheets.
+        /// </summary>
+        /// <returns>The current workbook instance.</returns>
+        public IXLWorkbook GetWorkbook()
+        {
+            worksheet.Columns().AdjustToContents();
+            return xLWorkbook;
+        }
+
+        /// <summary>
+        /// Saves the workbook with all sheets and disposes of resources.
+        /// </summary>
+        /// <param name="workbook">The workbook to save.</param>
+        public void SaveWorkbook(IXLWorkbook workbook)
+        {
+            workbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            _logger.LogInformation("Analysis is completed and report was generated successfully.");
+            workbook.Dispose();
+        }
+
+        /// <summary>
+        /// Adds an EOL Analysis worksheet to the provided workbook with EOL package data.
+        /// </summary>
+        /// <param name="workbook">The workbook to add the EOL Analysis sheet to.</param>
+        /// <param name="eolData">The EOL analysis data to populate in the worksheet.</param>
+        public async Task AddEOLAnalysisSheetAsync(IXLWorkbook workbook, List<EOLPackageData> eolData)
+        {
+            var eolWorksheet = workbook.Worksheets.Add("EOL Analysis");
+
+            // Add headers
+            eolWorksheet.Cell(1, 1).Value = "Package ID";
+            eolWorksheet.Cell(1, 2).Value = "Project";
+            eolWorksheet.Cell(1, 3).Value = "Current Version";
+            eolWorksheet.Cell(1, 4).Value = "Version Date";
+            eolWorksheet.Cell(1, 5).Value = "Age (Days)";
+            eolWorksheet.Cell(1, 6).Value = "Latest Version";
+            eolWorksheet.Cell(1, 7).Value = "Latest Version Date";
+            eolWorksheet.Cell(1, 8).Value = "License";
+            eolWorksheet.Cell(1, 9).Value = "License URL";
+            eolWorksheet.Cell(1, 10).Value = "Recommended Action";
+
+            // Format headers
+            eolWorksheet.Row(1).Style.Font.Bold = true;
+            eolWorksheet.Row(1).Style.Fill.BackgroundColor = XLColor.LightGray;
+            eolWorksheet.Row(1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            // Add data rows
+            int row = 2;
+            foreach (var item in eolData)
+            {
+                eolWorksheet.Cell(row, 1).Value = item.Id;
+                eolWorksheet.Cell(row, 2).Value = item.Project;
+                eolWorksheet.Cell(row, 3).Value = item.Version;
+                eolWorksheet.Cell(row, 4).Value = item.VersionDate;
+                eolWorksheet.Cell(row, 5).Value = item.Age;
+                eolWorksheet.Cell(row, 6).Value = item.LatestVersion;
+                eolWorksheet.Cell(row, 7).Value = item.LatestVersionDate;
+                eolWorksheet.Cell(row, 8).Value = item.License;
+                eolWorksheet.Cell(row, 9).Value = item.LicenseUrl;
+                eolWorksheet.Cell(row, 10).Value = item.Action;
+                row++;
+            }
+
+            // Auto-fit columns and apply borders
+            eolWorksheet.ColumnsUsed().AdjustToContents();
+            var dataRange = eolWorksheet.Range(1, 1, row - 1, 10);
+            dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            // Set auto-filter for the header row
+            eolWorksheet.Range(1, 1, 1, 10).SetAutoFilter();
+
+            _logger.LogInformation($"EOL Analysis worksheet added with {eolData.Count} packages.");
         }
 
         public void CompareExcelFiles(string filePath1, string filePath2, string outputFilePath)
