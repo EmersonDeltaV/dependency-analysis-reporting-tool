@@ -61,7 +61,7 @@ namespace BlackduckReportGeneratorTool
 
                             if (eolData != null && eolData.Count > 0)
                             {
-                                await _excelService.AddEOLAnalysisSheetAsync(workbook, eolData);
+                                _excelService.AddEOLAnalysisSheet(workbook, eolData);
                                 _logger.LogInformation($"EOL Analysis completed. Found {eolData.Count} packages.");
                             }
                             else
@@ -71,7 +71,7 @@ namespace BlackduckReportGeneratorTool
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError($"EOL Analysis failed: {ex.Message}");
+                            _logger.LogError(ex, "EOL Analysis failed: {ErrorMessage}", ex.Message);
                         }
                     }
 

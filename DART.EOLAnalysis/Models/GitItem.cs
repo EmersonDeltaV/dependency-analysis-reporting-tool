@@ -2,11 +2,11 @@ namespace DART.EOLAnalysis.Models
 {
     public class GitItem
     {
-        public string ObjectId { get; set; }
-        public string GitObjectType { get; set; }  // Changed from IsFolder to match API
-        public string CommitId { get; set; }
-        public string Path { get; set; }
+        public string ObjectId { get; set; } = string.Empty;
+        public string GitObjectType { get; set; }  = string.Empty;
+        public string CommitId { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
         public bool IsFolder { get; set; }
-        public string Url { get; set; }  // Added this as it's in the response
+        public string Url { get; set; } = string.Empty;
     }
 }

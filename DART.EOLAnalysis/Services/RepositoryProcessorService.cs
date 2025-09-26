@@ -13,7 +13,9 @@ namespace DART.EOLAnalysis.Services
             _logger = logger;
         }
 
-        public async Task<List<ProjectInfo>> ProcessRepositoryAsync(Repository repository, IAzureDevOpsClient azureDevOpsClient, CancellationToken cancellationToken = default)
+        public async Task<List<ProjectInfo>> ProcessRepositoryAsync(Repository repository,
+                                                                    IAzureDevOpsClient azureDevOpsClient,
+                                                                    CancellationToken cancellationToken = default)
         {
             try
             {

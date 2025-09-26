@@ -14,7 +14,7 @@ using DART.EOLAnalysis.Clients;
 
 class Program
 {
-    static async Task Main(string[] args)
+    static void Main(string[] args)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 

@@ -9,7 +9,7 @@ namespace BlackduckReportAnalysis
         void CompareExcelFiles(string filePath1, string filePath2, string outputFilePath);
         void PopulateRow(RowDetails rowDetails);
         void SaveReport();
-        Task AddEOLAnalysisSheetAsync(IXLWorkbook workbook, List<PackageData> eolData);
+        void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData);
         IXLWorkbook GetWorkbook();
         void SaveWorkbook(IXLWorkbook workbook);
     }

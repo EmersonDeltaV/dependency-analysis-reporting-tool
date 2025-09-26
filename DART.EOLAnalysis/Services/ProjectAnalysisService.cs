@@ -8,16 +8,16 @@ namespace DART.EOLAnalysis.Services
     public class ProjectAnalysisService : IProjectAnalysisService
     {
         private readonly ILogger<ProjectAnalysisService> _logger;
-        private readonly INugetMetadataService _nugetMetadataService;
-        private readonly IPackageRecommendationService _packageRecommendationService;
+        private readonly INugetMetadataService _nugetMetadata;
+        private readonly IPackageRecommendationService _packageRecommendation;
 
         public ProjectAnalysisService(ILogger<ProjectAnalysisService> logger,
-                                      INugetMetadataService nugetMetadataService,
-                                      IPackageRecommendationService packageRecommendationService)
+                                      INugetMetadataService nugetMetadata,
+                                      IPackageRecommendationService packageRecommendation)
         {
             _logger = logger;
-            _nugetMetadataService = nugetMetadataService;
-            _packageRecommendationService = packageRecommendationService;
+            _nugetMetadata = nugetMetadata;
+            _packageRecommendation = packageRecommendation;
         }
 
         public async Task<List<PackageData>> AnalyzeProjectAsync(ProjectInfo projectInfo, PackageRecommendationConfig recommendationConfig, CancellationToken cancellationToken = default)
@@ -27,7 +27,7 @@ namespace DART.EOLAnalysis.Services
             try
             {
                 // Initialize recommendation service with configuration
-                _packageRecommendationService.Initialize(recommendationConfig);
+                _packageRecommendation.Initialize(recommendationConfig);
 
                 _logger.LogInformation("Analyzing project: {ProjectName}", projectInfo.Name);
 
@@ -68,10 +68,10 @@ namespace DART.EOLAnalysis.Services
                         try
                         {
                             // Get NuGet metadata
-                            await _nugetMetadataService.GetDataAsync(packageData, cancellationToken);
+                            await _nugetMetadata.GetDataAsync(packageData, cancellationToken);
 
                             // Determine recommended action based on package data
-                            packageData.Action = _packageRecommendationService.DetermineAction(packageData);
+                            packageData.Action = _packageRecommendation.DetermineAction(packageData);
 
                             packageDataList.Add(packageData);
 
@@ -81,7 +81,15 @@ namespace DART.EOLAnalysis.Services
                         {
                             _logger.LogWarning(ex, "Failed to get NuGet metadata for package {PackageId} in project {ProjectName}: {ErrorMessage}",
                                 id, projectInfo.Name, ex.Message);
-                            // Continue processing other packages
+
+                            // Add failed package with error info for visibility
+                            packageDataList.Add(new PackageData()
+                            {
+                                Id = id,
+                                Project = projectInfo.Name,
+                                Version = version,
+                                Action = $"Error: {ex.Message}"
+                            });
                         }
                     }
                     else

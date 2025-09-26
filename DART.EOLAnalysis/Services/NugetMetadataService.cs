@@ -39,18 +39,18 @@ namespace DART.EOLAnalysis.Services
                 logger,
                 cancellationToken);
 
-            IPackageSearchMetadata currentVersion = packages.FirstOrDefault(p => p.Identity.Version.ToString() == data.Version);
-            IPackageSearchMetadata latestVersion = packages.LastOrDefault();
+            IPackageSearchMetadata? currentVersion = packages.FirstOrDefault(p => p.Identity.Version.ToString() == data.Version);
+            IPackageSearchMetadata? latestVersion = packages.LastOrDefault();
 
             var currentVersionDate = currentVersion?.Published.GetValueOrDefault().Date;
             var latestVersionDate = latestVersion?.Published.GetValueOrDefault().Date;
 
-            data.VersionDate = currentVersionDate?.ToString("MM/dd/yyyy");
-            data.LatestVersion = latestVersion?.Identity.Version.ToString();
-            data.LatestVersionDate = latestVersionDate?.ToString("MM/dd/yyyy");
-            data.LicenseUrl = currentVersion?.LicenseUrl.ToString();
+            data.VersionDate = currentVersionDate?.ToString("MM/dd/yyyy") ?? string.Empty;
+            data.LatestVersion = latestVersion?.Identity.Version.ToString() ?? string.Empty;
+            data.LatestVersionDate = latestVersionDate?.ToString("MM/dd/yyyy") ?? string.Empty;
+            data.LicenseUrl = currentVersion?.LicenseUrl?.ToString() ?? string.Empty;
 
-            data.License = currentVersion?.LicenseMetadata?.License;
+            data.License = currentVersion?.LicenseMetadata?.License ?? string.Empty;
 
             if (currentVersionDate is not null)
             {

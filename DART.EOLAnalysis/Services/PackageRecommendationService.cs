@@ -18,12 +18,7 @@ namespace DART.EOLAnalysis.Services
                 throw new ArgumentNullException(nameof(package));
             }
 
-            if (_config == null)
-            {
-                throw new InvalidOperationException("PackageRecommendationService must be initialized before use. Call Initialize() first.");
-            }
-
-            if (package.Age >= _config.OldPackageThresholdYears)
+            if (package.Age >= _config!.OldPackageThresholdYears)
             {
                 return DetermineActionForOldPackage(package);
             }
@@ -39,13 +34,13 @@ namespace DART.EOLAnalysis.Services
 
         private string DetermineActionForOldPackage(PackageData package)
         {
-            var defaultAction = _config.Messages.OldPackageDefault;
+            var defaultAction = _config!.Messages.OldPackageDefault;
 
-            if (package.LatestVersionDate is not null && package.VersionDate is not null)
+            if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
                 if (DateTime.Parse(package.LatestVersionDate) > DateTime.Parse(package.VersionDate))
                 {
-                    return _config.Messages.UpdateToNewer;
+                    return _config!.Messages.UpdateToNewer;
                 }
                 else
                 {
@@ -53,9 +48,9 @@ namespace DART.EOLAnalysis.Services
                 }
             }
 
-            if (package.LatestVersionDate is not null && package.VersionDate is null)
+            if (!string.IsNullOrEmpty(package.LatestVersionDate) && string.IsNullOrEmpty(package.VersionDate))
             {
-                return _config.Messages.ToBeDecided;
+                return _config!.Messages.ToBeDecided;
             }
 
             return defaultAction;
@@ -63,26 +58,26 @@ namespace DART.EOLAnalysis.Services
 
         private string DetermineActionForNearEolPackage(PackageData package)
         {
-            if (package.LatestVersionDate is not null && package.VersionDate is not null)
+            if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
                 if (DateTime.Parse(package.LatestVersionDate) > DateTime.Parse(package.VersionDate))
                 {
-                    return _config.Messages.NearEolUpdate;
+                    return _config!.Messages.NearEolUpdate;
                 }
             }
 
-            return _config.Messages.NoAction;
+            return _config!.Messages.NoAction;
         }
 
         private string DetermineActionForCurrentPackage(PackageData package)
         {
-            if (package.LatestVersionDate is not null && package.VersionDate is not null)
+            if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
-                return _config.Messages.NoAction;
+                return _config!.Messages.NoAction;
             }
             else
             {
-                return _config.Messages.ToBeDecided;
+                return _config!.Messages.ToBeDecided;
             }
         }
     }

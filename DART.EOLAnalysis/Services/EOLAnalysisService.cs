@@ -35,10 +35,10 @@ namespace DART.EOLAnalysis
                 // Initialize NuGet metadata service with configured API URL
                 _nugetMetadata.Initialize(config.NuGetApiUrl);
 
-                // Create Azure DevOps client with PAT from config and ensure disposal
+                // Create Azure DevOps client with PAT from config
                 using (var azureClient = _azureDevOpsClientFactory.CreateClient(config.Pat))
                 {
-                    // Process each repository using the new orchestrated approach
+                    // Process each repository
                     foreach (var repository in config.Repositories)
                     {
                         try
@@ -61,7 +61,7 @@ namespace DART.EOLAnalysis
                                 {
                                     var packageDataList = await _projectAnalysis.AnalyzeProjectAsync(projectInfo, config.PackageRecommendation, cancellationToken);
 
-                                    // Step 3: Add package data to results (no conversion needed)
+                                    // Step 3: Add package data to results
                                     results.AddRange(packageDataList);
                                 }
                                 catch (Exception ex)
