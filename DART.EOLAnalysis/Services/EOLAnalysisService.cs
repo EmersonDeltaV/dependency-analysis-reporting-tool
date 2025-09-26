@@ -1,15 +1,21 @@
 using Microsoft.Extensions.Logging;
 using DART.EOLAnalysis.Models;
+using DART.EOLAnalysis.Clients;
+using DART.EOLAnalysis.Services;
+using DART.EOLAnalysis.Helpers;
 
 namespace DART.EOLAnalysis
 {
     public class EOLAnalysisService : IEOLAnalysisService
     {
         private readonly ILogger<EOLAnalysisService> _logger;
+        private readonly INugetMetadataService _nugetMetadataService;
 
-        public EOLAnalysisService(ILogger<EOLAnalysisService> logger)
+        public EOLAnalysisService(ILogger<EOLAnalysisService> logger,
+                                  INugetMetadataService nugetMetadataService)
         {
             _logger = logger;
+            _nugetMetadataService = nugetMetadataService;
         }
 
         public async Task<List<EOLPackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config)
@@ -18,7 +24,7 @@ namespace DART.EOLAnalysis
 
             try
             {
-                // Create Azure DevOps API client
+                // Create Azure DevOps client with PAT from config
                 var azureClient = new AzureDevOpsClient(config.Pat);
 
                 // Process each repository
@@ -26,7 +32,7 @@ namespace DART.EOLAnalysis
                 {
                     _logger.LogInformation("Processing repository: {RepositoryName} ({RepositoryUrl})", repository.Name, repository.Url);
 
-                    // Create internal Repository instance (original class with ParseUrl) and parse URL
+                    // Create internal Repository instance and parse URL
                     var internalRepo = new Repository
                     {
                         Name = repository.Name,
@@ -50,7 +56,7 @@ namespace DART.EOLAnalysis
                         var csProjContent = await azureClient.GetFileContentAsync(internalRepo, gitItem.Path);
 
                         // Parse the package references
-                        var packageReferences = PackageConfigService.GetPackagesFromContent(csProjContent);
+                        var packageReferences = PackageConfigHelper.GetPackagesFromContent(csProjContent);
 
                         if (packageReferences is null)
                         {
@@ -64,7 +70,7 @@ namespace DART.EOLAnalysis
 
                             if (id != null && version != null)
                             {
-                                var data = new CSVHeader()
+                                var data = new PackageData()
                                 {
                                     Id = id,
                                     Project = projectName,
@@ -72,7 +78,7 @@ namespace DART.EOLAnalysis
                                 };
 
                                 // Get NuGet metadata
-                                await NugetMetaData.GetData(data);
+                                await _nugetMetadataService.GetDataAsync(data);
 
                                 // Convert to our output model
                                 var packageData = new EOLPackageData

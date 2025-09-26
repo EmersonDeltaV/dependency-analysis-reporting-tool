@@ -1,18 +1,11 @@
 using System.Xml.Linq;
 
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Helpers
 {
-    internal static class PackageConfigService
+    public static class PackageConfigHelper
     {
-        // Existing method - unchanged
-        internal static IEnumerable<XElement>? GetPackages(string path)
-        {
-            XDocument doc = XDocument.Load(path);
-            return ProcessXDocument(doc);
-        }
-
-        // New method for processing content from API
-        internal static IEnumerable<XElement>? GetPackagesFromContent(string content)
+        // Parse package references from .csproj content
+        public static IEnumerable<XElement>? GetPackagesFromContent(string content)
         {
             XDocument doc = XDocument.Parse(content);
             return ProcessXDocument(doc);

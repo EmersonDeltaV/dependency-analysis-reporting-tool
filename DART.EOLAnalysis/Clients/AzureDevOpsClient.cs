@@ -1,10 +1,11 @@
+using DART.EOLAnalysis.Models;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Clients
 {
-    public class AzureDevOpsClient
+    public class AzureDevOpsClient : IAzureDevOpsClient
     {
         private readonly HttpClient _httpClient;
         private readonly string _pat;

@@ -1,6 +1,6 @@
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Models
 {
-    internal class CSVHeader
+    public class PackageData
     {
         public string Id { get; set; }
         public string Project { get; set; }

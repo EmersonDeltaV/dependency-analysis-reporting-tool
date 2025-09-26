@@ -2,7 +2,7 @@ using Microsoft.Build.Construction;
 
 namespace DART.EOLAnalysis
 {
-    internal static class PackageReaderService
+    public static class PackageReaderService
     {
         public static IEnumerable<ProjectItemElement> ReadProjectPackages(string csProjPath)
         {

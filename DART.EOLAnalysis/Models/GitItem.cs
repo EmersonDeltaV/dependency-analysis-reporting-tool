@@ -1,13 +1,6 @@
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Models
 {
-    // Response models
-    public class GitItemsResponse // Changed from private to public
-    {
-        public int Count { get; set; }
-        public List<GitItem> Value { get; set; } = new List<GitItem>();
-    }
-
-    public class GitItem // Changed from private to public
+    public class GitItem
     {
         public string ObjectId { get; set; }
         public string GitObjectType { get; set; }  // Changed from IsFolder to match API

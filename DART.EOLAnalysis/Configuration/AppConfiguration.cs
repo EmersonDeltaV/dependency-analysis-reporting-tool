@@ -1,4 +1,6 @@
-namespace DART.EOLAnalysis
+using DART.EOLAnalysis.Models;
+
+namespace DART.EOLAnalysis.Configuration
 {
     public class AppConfiguration
     {

@@ -1,20 +1,26 @@
+using DART.EOLAnalysis.Models;
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Services
 {
-    internal static class NugetMetaData
+    public class NugetMetadataService : INugetMetadataService
     {
-        internal static async Task GetData(CSVHeader data)
+        private readonly SourceRepository _repository;
+
+        public NugetMetadataService()
+        {
+            _repository = NuGet.Protocol.Core.Types.Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+        }
+
+        public async Task GetDataAsync(PackageData data)
         {
             ILogger logger = NullLogger.Instance;
             CancellationToken cancellationToken = CancellationToken.None;
 
             SourceCacheContext cache = new SourceCacheContext();
-            SourceRepository repository = NuGet.Protocol.Core.Types.Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
-
-            PackageMetadataResource resource = await repository.GetResourceAsync<PackageMetadataResource>();
+            PackageMetadataResource resource = await _repository.GetResourceAsync<PackageMetadataResource>();
 
             IEnumerable<IPackageSearchMetadata> packages = await resource.GetMetadataAsync(
                 data.Id,
@@ -39,7 +45,7 @@ namespace DART.EOLAnalysis
 
             if (currentVersionDate is not null)
             {
-                data.Age = Math.Round(((DateTime.Today - currentVersionDate.Value).TotalDays / 365), 1);
+                data.Age = Math.Round((DateTime.Today - currentVersionDate.Value).TotalDays / 365, 1);
             }
             else
             {
@@ -53,7 +59,7 @@ namespace DART.EOLAnalysis
             //N/A
         }
 
-        private static void DecideAction(CSVHeader data)
+        private void DecideAction(PackageData data)
         {
             if (data.Age >= 3)
             {
