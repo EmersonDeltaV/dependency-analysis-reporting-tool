@@ -4,6 +4,6 @@ namespace DART.EOLAnalysis
 {
     public interface IEOLAnalysisService
     {
-        Task<List<EOLPackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config);
+        Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, CancellationToken cancellationToken = default);
     }
 }

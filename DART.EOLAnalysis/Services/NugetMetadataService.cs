@@ -7,20 +7,29 @@ namespace DART.EOLAnalysis.Services
 {
     public class NugetMetadataService : INugetMetadataService
     {
-        private readonly SourceRepository _repository;
+        private SourceRepository? _repository;
 
-        public NugetMetadataService()
+        public void Initialize(string nugetApiUrl)
         {
-            _repository = NuGet.Protocol.Core.Types.Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+            if (string.IsNullOrWhiteSpace(nugetApiUrl))
+            {
+                throw new ArgumentException("NuGet API URL cannot be null or empty.", nameof(nugetApiUrl));
+            }
+
+            _repository = NuGet.Protocol.Core.Types.Repository.Factory.GetCoreV3(nugetApiUrl);
         }
 
-        public async Task GetDataAsync(PackageData data)
+        public async Task GetDataAsync(PackageData data, CancellationToken cancellationToken = default)
         {
+            if (_repository == null)
+            {
+                throw new InvalidOperationException("NugetMetadataService must be initialized before use. Call Initialize() first.");
+            }
+
             ILogger logger = NullLogger.Instance;
-            CancellationToken cancellationToken = CancellationToken.None;
 
             SourceCacheContext cache = new SourceCacheContext();
-            PackageMetadataResource resource = await _repository.GetResourceAsync<PackageMetadataResource>();
+            PackageMetadataResource resource = await _repository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
 
             IEnumerable<IPackageSearchMetadata> packages = await resource.GetMetadataAsync(
                 data.Id,
@@ -52,59 +61,9 @@ namespace DART.EOLAnalysis.Services
                 data.Age = 50;
             }
 
-            DecideAction(data);
-
             //Update to new version
             //Replace the package
             //N/A
-        }
-
-        private void DecideAction(PackageData data)
-        {
-            if (data.Age >= 3)
-            {
-                var defaultAction = "Package is over 3 yrs old; investigate or replace/remove.";
-                if (data.LatestVersionDate is not null && data.VersionDate is not null)
-                {
-                    if (DateTime.Parse(data.LatestVersionDate) > DateTime.Parse(data.VersionDate))
-                    {
-                        data.Action = "Update to newer version";
-                    }
-                    else
-                    {
-                        data.Action = defaultAction;
-                    }
-                }
-                if (data.LatestVersionDate is not null && data.VersionDate is null)
-                {
-                    data.Action = "TBD";
-                }
-                else
-                {
-                    data.Action = defaultAction;
-                }
-            }
-            else if (data.Age >= 2 && data.Age < 3)
-            {
-                if (data.LatestVersionDate is not null && data.VersionDate is not null)
-                {
-                    if (DateTime.Parse(data.LatestVersionDate) > DateTime.Parse(data.VersionDate))
-                    {
-                        data.Action = "Near EOL consider updating to newer version";
-                    }
-                }
-            }
-            else
-            {
-                if (data.LatestVersionDate is not null && data.VersionDate is not null)
-                {
-                    data.Action = "N/A";
-                }
-                else
-                {
-                    data.Action = "TBD";
-                }
-            }
         }
     }
 }

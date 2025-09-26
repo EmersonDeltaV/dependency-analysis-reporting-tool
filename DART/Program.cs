@@ -10,6 +10,7 @@ using BlackduckReportGeneratorTool;
 using Microsoft.Extensions.Configuration;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Services;
+using DART.EOLAnalysis.Clients;
 
 class Program
 {
@@ -39,6 +40,10 @@ class Program
         builder.Services.AddSingleton<IFileService, FileService>();
         builder.Services.AddSingleton<IEOLAnalysisService, EOLAnalysisService>();
         builder.Services.AddSingleton<INugetMetadataService, NugetMetadataService>();
+        builder.Services.AddSingleton<IAzureDevOpsClientFactory, AzureDevOpsClientFactory>();
+        builder.Services.AddSingleton<IRepositoryProcessorService, RepositoryProcessorService>();
+        builder.Services.AddSingleton<IProjectAnalysisService, ProjectAnalysisService>();
+        builder.Services.AddSingleton<IPackageRecommendationService, PackageRecommendationService>();
 
         using IHost host = builder.Build();
 

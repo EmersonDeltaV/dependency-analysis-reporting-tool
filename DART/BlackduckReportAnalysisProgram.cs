@@ -57,7 +57,7 @@ namespace BlackduckReportGeneratorTool
                         try
                         {
                             _logger.LogInformation("Starting EOL Analysis...");
-                            var eolData = await _eolAnalysisService.AnalyzeRepositoriesAsync(_config.EOLAnalysis);
+                            var eolData = await _eolAnalysisService.AnalyzeRepositoriesAsync(_config.EOLAnalysis, cancellationToken);
 
                             if (eolData != null && eolData.Count > 0)
                             {
@@ -89,13 +89,17 @@ namespace BlackduckReportGeneratorTool
                 }
 
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                _logger.LogError($"Could not reach {_config.BaseUrl}. Please ensure that you are connected to the corporate VPN.");
+                _logger.LogError(ex, $"Could not reach {_config.BaseUrl}. Please ensure that you are connected to the corporate VPN: {ex.Message}");
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, $"Configuration Error: {ex.Message}");
             }
             catch (ConfigException ex)
             {
-                Console.WriteLine($"ERROR: {ex.Message}");
+                _logger.LogError(ex, $"ERROR: {ex.Message}");
             }
             catch (Exception ex)
             {

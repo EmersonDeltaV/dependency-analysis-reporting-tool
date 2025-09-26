@@ -1,113 +1,87 @@
-using Microsoft.Extensions.Logging;
-using DART.EOLAnalysis.Models;
 using DART.EOLAnalysis.Clients;
+using DART.EOLAnalysis.Models;
 using DART.EOLAnalysis.Services;
-using DART.EOLAnalysis.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace DART.EOLAnalysis
 {
     public class EOLAnalysisService : IEOLAnalysisService
     {
         private readonly ILogger<EOLAnalysisService> _logger;
-        private readonly INugetMetadataService _nugetMetadataService;
+        private readonly INugetMetadataService _nugetMetadata;
+        private readonly IAzureDevOpsClientFactory _azureDevOpsClientFactory;
+        private readonly IRepositoryProcessorService _repositoryProcessor;
+        private readonly IProjectAnalysisService _projectAnalysis;
 
         public EOLAnalysisService(ILogger<EOLAnalysisService> logger,
-                                  INugetMetadataService nugetMetadataService)
+                                  INugetMetadataService nugetMetadata,
+                                  IAzureDevOpsClientFactory azureDevOpsClientFactory,
+                                  IRepositoryProcessorService repositoryProcessor,
+                                  IProjectAnalysisService projectAnalysis)
         {
             _logger = logger;
-            _nugetMetadataService = nugetMetadataService;
+            _nugetMetadata = nugetMetadata;
+            _azureDevOpsClientFactory = azureDevOpsClientFactory;
+            _repositoryProcessor = repositoryProcessor;
+            _projectAnalysis = projectAnalysis;
         }
 
-        public async Task<List<EOLPackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config)
+        public async Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, CancellationToken cancellationToken = default)
         {
-            var results = new List<EOLPackageData>();
+            var results = new List<PackageData>();
 
             try
             {
-                // Create Azure DevOps client with PAT from config
-                var azureClient = new AzureDevOpsClient(config.Pat);
+                // Initialize NuGet metadata service with configured API URL
+                _nugetMetadata.Initialize(config.NuGetApiUrl);
 
-                // Process each repository
-                foreach (var repository in config.Repositories)
+                // Create Azure DevOps client with PAT from config and ensure disposal
+                using (var azureClient = _azureDevOpsClientFactory.CreateClient(config.Pat))
                 {
-                    _logger.LogInformation("Processing repository: {RepositoryName} ({RepositoryUrl})", repository.Name, repository.Url);
-
-                    // Create internal Repository instance and parse URL
-                    var internalRepo = new Repository
+                    // Process each repository using the new orchestrated approach
+                    foreach (var repository in config.Repositories)
                     {
-                        Name = repository.Name,
-                        Url = repository.Url,
-                        Branch = repository.Branch
-                    };
-                    internalRepo.ParseUrl();
-
-                    // Find all .csproj files in the repository
-                    var gitItems = await azureClient.FindCsProjFilesAsync(internalRepo);
-
-                    foreach (var gitItem in gitItems)
-                    {
-                        // Extract project name from path
-                        var pathParts = gitItem.Path.Split('/');
-                        var projectName = pathParts.Length > 1 ? pathParts[^2] : repository.Name;
-
-                        _logger.LogInformation("Analyzing project: {ProjectName}", projectName);
-
-                        // Get the .csproj file content
-                        var csProjContent = await azureClient.GetFileContentAsync(internalRepo, gitItem.Path);
-
-                        // Parse the package references
-                        var packageReferences = PackageConfigHelper.GetPackagesFromContent(csProjContent);
-
-                        if (packageReferences is null)
+                        try
                         {
-                            continue;
+                            // Create internal Repository instance for processing
+                            var internalRepo = new Repository
+                            {
+                                Name = repository.Name,
+                                Url = repository.Url,
+                                Branch = repository.Branch
+                            };
+
+                            // Step 1: Process repository to get project files
+                            var projectInfos = await _repositoryProcessor.ProcessRepositoryAsync(internalRepo, azureClient, cancellationToken);
+
+                            // Step 2: Analyze each project to get package data
+                            foreach (var projectInfo in projectInfos)
+                            {
+                                try
+                                {
+                                    var packageDataList = await _projectAnalysis.AnalyzeProjectAsync(projectInfo, config.PackageRecommendation, cancellationToken);
+
+                                    // Step 3: Add package data to results (no conversion needed)
+                                    results.AddRange(packageDataList);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "Failed to analyze project {ProjectName} in repository {RepositoryName}: {ErrorMessage}",
+                                        projectInfo.Name, repository.Name, ex.Message);
+                                    // Continue processing other projects
+                                }
+                            }
                         }
-
-                        foreach (var packageReference in packageReferences)
+                        catch (Exception ex)
                         {
-                            var id = packageReference.Attribute("Include")?.Value;
-                            var version = packageReference.Attribute("Version")?.Value;
-
-                            if (id != null && version != null)
-                            {
-                                var data = new PackageData()
-                                {
-                                    Id = id,
-                                    Project = projectName,
-                                    Version = version
-                                };
-
-                                // Get NuGet metadata
-                                await _nugetMetadataService.GetDataAsync(data);
-
-                                // Convert to our output model
-                                var packageData = new EOLPackageData
-                                {
-                                    Id = data.Id,
-                                    Project = data.Project,
-                                    Version = data.Version,
-                                    VersionDate = data.VersionDate ?? string.Empty,
-                                    Age = data.Age,
-                                    LatestVersion = data.LatestVersion ?? string.Empty,
-                                    LatestVersionDate = data.LatestVersionDate ?? string.Empty,
-                                    License = data.License ?? string.Empty,
-                                    LicenseUrl = data.LicenseUrl ?? string.Empty,
-                                    Action = data.Action ?? string.Empty
-                                };
-
-                                results.Add(packageData);
-
-                                _logger.LogInformation("Package analyzed: {PackageId}", id);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("PackageReference element is missing 'Include' or 'Version' attribute in project {ProjectName}", projectName);
-                            }
+                            _logger.LogWarning(ex, "Failed to process repository {RepositoryName}: {ErrorMessage}",
+                                repository.Name, ex.Message);
+                            // Continue processing other repositories
                         }
                     }
-                }
 
-                _logger.LogInformation("EOL analysis completed. Analyzed {PackageCount} packages", results.Count);
+                    _logger.LogInformation("EOL analysis completed. Analyzed {PackageCount} packages", results.Count);
+                }
             }
             catch (Exception ex)
             {

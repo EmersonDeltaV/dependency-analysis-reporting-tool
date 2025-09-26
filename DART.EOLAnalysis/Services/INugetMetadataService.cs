@@ -4,6 +4,7 @@ namespace DART.EOLAnalysis.Services
 {
     public interface INugetMetadataService
     {
-        Task GetDataAsync(PackageData data);
+        void Initialize(string nugetApiUrl);
+        Task GetDataAsync(PackageData data, CancellationToken cancellationToken = default);
     }
 }

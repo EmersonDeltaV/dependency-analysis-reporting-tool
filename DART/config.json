@@ -23,6 +23,7 @@
   },
   "EOLAnalysis": {
     "Pat": "",
+    "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
       {
         "Name": "",
@@ -34,7 +35,18 @@
         "Url": "",
         "Branch": ""
       }
-    ]
+    ],
+    "PackageRecommendation": {
+      "OldPackageThresholdYears": 3.0,
+      "NearEolThresholdYears": 2.0,
+      "Messages": {
+        "OldPackageDefault": "Package is over 3 yrs old; investigate or replace/remove.",
+        "UpdateToNewer": "Update to newer version",
+        "NearEolUpdate": "Near EOL consider updating to newer version",
+        "NoAction": "N/A",
+        "ToBeDecided": "TBD"
+      }
+    }
   },
   "Serilog": {
     "Using": [ "Serilog.Sinks.File" ],
