@@ -161,7 +161,7 @@ namespace BlackduckReportAnalysis
         /// </summary>
         /// <param name="workbook">The workbook to add the EOL Analysis sheet to.</param>
         /// <param name="eolData">The EOL analysis data to populate in the worksheet.</param>
-        public async Task AddEOLAnalysisSheetAsync(IXLWorkbook workbook, List<EOLPackageData> eolData)
+        public void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData)
         {
             var eolWorksheet = workbook.Worksheets.Add("EOL Analysis");
 

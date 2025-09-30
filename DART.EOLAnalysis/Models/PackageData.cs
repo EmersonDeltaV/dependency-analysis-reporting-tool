@@ -1,6 +1,6 @@
 namespace DART.EOLAnalysis.Models
 {
-    public class EOLPackageData
+    public class PackageData
     {
         public string Id { get; set; } = string.Empty;
         public string Project { get; set; } = string.Empty;

@@ -196,7 +196,7 @@ DependencyAnalysisReportingTool/
 │   ├── Models/                     # Configuration and data models
 │   └── config.json                 # Application configuration
 ├── BlackduckReportGeneratorTool/   # BlackDuck API integration
-└── EOLAnalysisLib/                 # EOL analysis functionality
+└── DART.EOLAnalysis/               # EOL analysis functionality
 ```
 ### Key Technologies
 - **.NET 8.0** - Runtime and SDK

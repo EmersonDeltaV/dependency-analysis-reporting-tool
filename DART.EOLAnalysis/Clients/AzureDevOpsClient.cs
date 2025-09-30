@@ -1,13 +1,15 @@
+using DART.EOLAnalysis.Models;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace DART.EOLAnalysis
+namespace DART.EOLAnalysis.Clients
 {
-    public class AzureDevOpsClient
+    public class AzureDevOpsClient : IAzureDevOpsClient, IDisposable
     {
         private readonly HttpClient _httpClient;
         private readonly string _pat;
+        private bool _disposed = false;
 
         public AzureDevOpsClient(string pat)
         {
@@ -20,7 +22,7 @@ namespace DART.EOLAnalysis
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task<List<GitItem>> FindCsProjFilesAsync(Repository repo)
+        public async Task<List<GitItem>> FindCsProjFilesAsync(Repository repo, CancellationToken cancellationToken = default)
         {
             // API URL to search repository items
             string apiUrl = $"https://dev.azure.com/{repo.Organization}/{repo.Project}/_apis/git/repositories/{repo.RepositoryName}/items?recursionLevel=Full&api-version=7.0";
@@ -30,7 +32,7 @@ namespace DART.EOLAnalysis
                 apiUrl += $"&versionDescriptor.version={repo.Branch}&versionDescriptor.versionType=branch";
             }
 
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
+            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync();
@@ -47,14 +49,31 @@ namespace DART.EOLAnalysis
                 .ToList() ?? new List<GitItem>();
         }
 
-        public async Task<string> GetFileContentAsync(Repository repo, string filePath)
+        public async Task<string> GetFileContentAsync(Repository repo, string filePath, CancellationToken cancellationToken = default)
         {
             var downloadUrl = $"https://dev.azure.com/{repo.Organization}/{repo.Project}/_apis/git/repositories/{repo.RepositoryName}/items?path={Uri.EscapeDataString(filePath)}&api-version=7.1&$format=octetStream";
 
-            HttpResponseMessage response = await _httpClient.GetAsync(downloadUrl);
+            HttpResponseMessage response = await _httpClient.GetAsync(downloadUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadAsStringAsync();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _httpClient?.Dispose();
+                }
+                _disposed = true;
+            }
         }
     }
 }
