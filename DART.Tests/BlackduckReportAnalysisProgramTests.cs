@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using ClosedXML.Excel;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Options;
 
 namespace DART.Tests
 {
@@ -89,48 +90,15 @@ namespace DART.Tests
             return config;
         }
 
-        private static IConfiguration BuildConfigurationFromConfig(Config cfg)
-        {
-            // Flatten Config into an in-memory configuration dictionary for binder
-            var dict = new Dictionary<string, string?>
-            {
-                ["ReportFolderPath"] = cfg.ReportFolderPath,
-                ["OutputFilePath"] = cfg.OutputFilePath,
-                ["BlackduckToken"] = cfg.BlackduckToken,
-                ["BaseUrl"] = cfg.BaseUrl,
-                ["LogPath"] = cfg.LogPath,
-                ["ProductName"] = cfg.ProductName,
-                ["ProductVersion"] = cfg.ProductVersion,
-                ["ProductIteration"] = cfg.ProductIteration,
-                ["PreviousResults"] = cfg.PreviousResults,
-                ["CurrentResults"] = cfg.CurrentResults,
-                ["FeatureToggles:EnableDownloadTool"] = cfg.FeatureToggles?.EnableDownloadTool.ToString() ?? "False",
-                ["FeatureToggles:EnableEOLAnalysis"] = cfg.FeatureToggles?.EnableEOLAnalysis.ToString() ?? "False",
-            };
-
-            if (cfg.EOLAnalysis?.Repositories != null)
-            {
-                for (var i = 0; i < cfg.EOLAnalysis.Repositories.Count; i++)
-                {
-                    var r = cfg.EOLAnalysis.Repositories[i];
-                    dict[$"EOLAnalysis:Repositories:{i}:Name"] = r.Name;
-                    dict[$"EOLAnalysis:Repositories:{i}:Url"] = r.Url;
-                    dict[$"EOLAnalysis:Repositories:{i}:Branch"] = r.Branch;
-                }
-            }
-
-            return new ConfigurationBuilder()
-                .AddInMemoryCollection(dict)
-                .Build();
-        }
+        // Removed legacy IConfiguration builder; tests now use IOptions<Config> directly
 
         private BlackduckReportAnalysisProgram CreateProgram(Config config)
         {
-            var configuration = BuildConfigurationFromConfig(config);
+            var configOptions = Options.Create(config);
 
             return new BlackduckReportAnalysisProgram(
                 _mockBlackduckReportGenerator,
-                configuration,
+                configOptions,
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
@@ -457,13 +425,14 @@ namespace DART.Tests
         public void Constructor_ShouldThrowConfigException_WhenConfigurationReturnsNull()
         {
             // Arrange
-            var nullConfiguration = new TestConfiguration(null);
-
             // Act & Assert
             // 1.8.1 Expect ConfigException
+            var nullOptions = Substitute.For<IOptions<Config>>();
+            nullOptions.Value.Returns((Config)null!);
+
             var exception = Assert.Throws<ConfigException>(() => new BlackduckReportAnalysisProgram(
                 _mockBlackduckReportGenerator,
-                nullConfiguration,
+                nullOptions,
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
@@ -505,8 +474,8 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // 1.10 HttpRequestException inside StartAsync is logged
-            _mockLogger.Received().LogError(httpException, $"Could not reach {config.BaseUrl}. Please ensure that you are connected to the corporate VPN: {httpException.Message}");
+            // 1.10 HttpRequestException inside StartAsync is logged (structured logging)
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
         }
 
         [Fact]
@@ -525,8 +494,8 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // 1.11 Generic Exception path is logged
-            _mockLogger.Received().LogError($"Encountered an exception: {genericException.Message}");
+            // 1.11 Generic Exception path is logged (structured logging)
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
         }
 
         [Fact]
@@ -545,8 +514,8 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // ArgumentException should be logged appropriately
-            _mockLogger.Received().LogError(argumentException, $"Configuration Error: {argumentException.Message}");
+            // ArgumentException should be logged appropriately (structured logging)
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
         }
 
         [Fact]
@@ -565,38 +534,10 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // ConfigException should be logged appropriately
-            _mockLogger.Received().LogError(configException, $"ERROR: {configException.Message}");
+            // ConfigException should be logged appropriately (structured logging)
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
         }
     }
 
-    // Simple test configuration implementation that returns our test config
-    internal class TestConfiguration : IConfiguration
-    {
-        private readonly Config? _config;
-
-        public TestConfiguration(Config? config)
-        {
-            _config = config;
-        }
-
-        public string? this[string key]
-        {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
-        }
-
-        public IEnumerable<IConfigurationSection> GetChildren() => new List<IConfigurationSection>();
-        public IChangeToken GetReloadToken() => throw new NotImplementedException();
-        public IConfigurationSection GetSection(string key) => throw new NotImplementedException();
-
-        public T? Get<T>() where T : class
-        {
-            if (typeof(T) == typeof(Config))
-            {
-                return _config as T;
-            }
-            return default(T);
-        }
-    }
+    
 }

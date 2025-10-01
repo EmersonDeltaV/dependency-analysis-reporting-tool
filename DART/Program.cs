@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Services;
 using DART.EOLAnalysis.Clients;
+using BlackduckReportAnalysis.Models;
+using Microsoft.Extensions.Options;
 
 class Program
 {
@@ -30,6 +32,7 @@ class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
+        builder.Services.Configure<Config>(configuration);
         builder.Services.AddHostedService<BlackduckReportAnalysisProgram>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddSingleton<ICsvService, CsvService>();
