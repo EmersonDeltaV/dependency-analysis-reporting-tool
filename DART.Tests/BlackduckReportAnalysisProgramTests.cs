@@ -537,7 +537,519 @@ namespace DART.Tests
             // ConfigException should be logged appropriately (structured logging)
             _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
         }
+
+        [Fact]
+        public async Task StartAsync_ShouldSaveWorkbookEvenWhenEOLAnalysisExceptionOccurs_WhenDownloadToolEnabled()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            var exception = new InvalidOperationException("EOL Analysis exception");
+
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+                .Returns<Task<List<PackageData>>>(x => Task.FromException<List<PackageData>>(exception));
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert
+            // Workbook should still be saved even when EOL analysis exception occurs
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
+
+            // Cleanup should still be called when download tool is enabled
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
+
+            // EOL Analysis error should be logged
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldCleanupWhenExceptionOccursBeforeWorkbookCreated_WhenDownloadToolEnabled()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var exception = new InvalidOperationException("Test exception before workbook");
+
+            // Exception occurs before workbook is created (during AnalyzeReport)
+            _mockCsvService.AnalyzeReport().Returns<Task>(x => throw exception);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert
+            // Workbook should NOT be saved since it was never created
+            _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
+
+            // Cleanup should still be called when download tool is enabled
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
+
+            // Exception should be logged
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallCleanupWhenExceptionOccurs_WhenDownloadToolDisabled()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: false);
+            var exception = new InvalidOperationException("Test exception");
+
+            // Exception occurs before workbook is created (during AnalyzeReport)
+            _mockCsvService.AnalyzeReport().Returns<Task>(x => throw exception);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert
+            // Workbook should NOT be saved since it was never created
+            _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
+
+            // Cleanup should NOT be called when download tool is disabled
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+
+            // Exception should be logged
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
+        }
+
+        [Fact]
+        public void Constructor_ShouldThrowConfigException_WhenRequiredFieldsMissing()
+        {
+            // Arrange
+            var invalidConfig = new Config
+            {
+                // Missing required fields
+                ReportFolderPath = "",
+                OutputFilePath = "",
+                BlackduckToken = "",
+                BaseUrl = "",
+                ProductName = "",
+                ProductVersion = ""
+            };
+            var configOptions = Options.Create(invalidConfig);
+
+            // Act & Assert
+            var exception = Assert.Throws<ConfigException>(() => new BlackduckReportAnalysisProgram(
+                _mockBlackduckReportGenerator,
+                configOptions,
+                _mockCsvService,
+                _mockExcelService,
+                _mockEOLAnalysisService,
+                _mockLogger));
+
+            Assert.Contains("Configuration validation failed", exception.Message);
+            Assert.Contains("ReportFolderPath is required", exception.Message);
+            Assert.Contains("OutputFilePath is required", exception.Message);
+            Assert.Contains("BaseUrl is required", exception.Message);
+            Assert.Contains("BlackduckToken is required", exception.Message);
+            Assert.Contains("ProductName is required", exception.Message);
+            Assert.Contains("ProductVersion is required", exception.Message);
+        }
+
+        [Fact]
+        public void Constructor_ShouldNotThrow_WhenAllRequiredFieldsProvided()
+        {
+            // Arrange
+            var validConfig = CreateDefaultConfig();
+            var configOptions = Options.Create(validConfig);
+
+            // Act & Assert - Should not throw
+            var program = new BlackduckReportAnalysisProgram(
+                _mockBlackduckReportGenerator,
+                configOptions,
+                _mockCsvService,
+                _mockExcelService,
+                _mockEOLAnalysisService,
+                _mockLogger);
+
+            Assert.NotNull(program);
+        }
+
+        [Fact]
+        public void Constructor_ShouldHandleNullFeatureToggles()
+        {
+            // Arrange
+            var config = CreateDefaultConfig();
+            config.FeatureToggles = null;
+            var configOptions = Options.Create(config);
+
+            // Act & Assert - Should not throw, should create default FeatureToggles
+            var program = new BlackduckReportAnalysisProgram(
+                _mockBlackduckReportGenerator,
+                configOptions,
+                _mockCsvService,
+                _mockExcelService,
+                _mockEOLAnalysisService,
+                _mockLogger);
+
+            Assert.NotNull(program);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldOnlyProcessComparison_WhenOnlyPreviousResultsProvided()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(
+                enableDownloadTool: true,
+                enableEOLAnalysis: true,
+                previousResults: "C:\\Previous\\report.xlsx",
+                currentResults: "", // Empty current results
+                repositoryCount: 2);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert
+            // Should not call comparison flow since both previous AND current are required
+            _mockExcelService.DidNotReceive().CompareExcelFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+
+            // Should proceed with normal initial report flow
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockCsvService.Received(1).AnalyzeReport();
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldOnlyProcessComparison_WhenOnlyCurrentResultsProvided()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(
+                enableDownloadTool: true,
+                enableEOLAnalysis: true,
+                previousResults: "", // Empty previous results
+                currentResults: "C:\\Current\\report.xlsx",
+                repositoryCount: 2);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert
+            // Should not call comparison flow since both previous AND current are required
+            _mockExcelService.DidNotReceive().CompareExcelFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+
+            // Should proceed with normal initial report flow
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockCsvService.Received(1).AnalyzeReport();
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldFollowCorrectCallOrder_WhenDownloadToolEnabledWithEOLAnalysis()
+        {
+            // Arrange
+            var eolData = new List<PackageData>
+            {
+                new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
+            };
+
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(eolData));
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify correct call order
+            Received.InOrder(() =>
+            {
+                _mockBlackduckReportGenerator.GenerateReport();
+                _mockCsvService.AnalyzeReport();
+                _mockExcelService.GetWorkbook();
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                _mockExcelService.AddEOLAnalysisSheet(mockWorkbook, eolData);
+                _mockExcelService.SaveWorkbook(mockWorkbook);
+                _mockBlackduckReportGenerator.Cleanup();
+            });
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldFollowCorrectCallOrder_WhenDownloadToolEnabledWithoutEOLAnalysis()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify correct call order (without EOL analysis calls)
+            Received.InOrder(() =>
+            {
+                _mockBlackduckReportGenerator.GenerateReport();
+                _mockCsvService.AnalyzeReport();
+                _mockExcelService.GetWorkbook();
+                _mockExcelService.SaveWorkbook(mockWorkbook);
+                _mockBlackduckReportGenerator.Cleanup();
+            });
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldFollowCorrectCallOrder_WhenDownloadToolDisabledWithEOLAnalysis()
+        {
+            // Arrange
+            var eolData = new List<PackageData>
+            {
+                new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
+            };
+
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 1);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(eolData));
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify correct call order (no GenerateReport/Cleanup, but EOL analysis)
+            Received.InOrder(() =>
+            {
+                _mockCsvService.AnalyzeReport();
+                _mockExcelService.GetWorkbook();
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                _mockExcelService.AddEOLAnalysisSheet(mockWorkbook, eolData);
+                _mockExcelService.SaveWorkbook(mockWorkbook);
+            });
+
+            // Verify GenerateReport and Cleanup are NOT called
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldFollowCorrectCallOrder_WhenComparisonFlow()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(
+                enableDownloadTool: true,
+                enableEOLAnalysis: true,
+                previousResults: "C:\\Previous\\report.xlsx",
+                currentResults: "C:\\Current\\report.xlsx",
+                repositoryCount: 2);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Only CompareExcelFiles should be called
+            _mockExcelService.Received(1).CompareExcelFiles(config.CurrentResults, config.PreviousResults, config.OutputFilePath);
+
+            // Verify that no other workflow methods are called
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockCsvService.DidNotReceive().AnalyzeReport();
+            _mockExcelService.DidNotReceive().GetWorkbook();
+            _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldMaintainCallOrderEvenWithEOLException()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            var exception = new InvalidOperationException("EOL Analysis failed");
+
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+                .Returns<Task<List<PackageData>>>(x => Task.FromException<List<PackageData>>(exception));
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify correct call order even when EOL analysis fails
+            Received.InOrder(() =>
+            {
+                _mockBlackduckReportGenerator.GenerateReport();
+                _mockCsvService.AnalyzeReport();
+                _mockExcelService.GetWorkbook();
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                // AddEOLAnalysisSheet should NOT be called due to exception
+                _mockExcelService.SaveWorkbook(mockWorkbook); // Still called in main flow
+                _mockBlackduckReportGenerator.Cleanup();
+            });
+
+            // Verify AddEOLAnalysisSheet was NOT called due to exception
+            _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallAnyInitialFlowMethods_WhenComparisonFlowIsUsed()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(
+                enableDownloadTool: true,
+                enableEOLAnalysis: true,
+                previousResults: "C:\\Previous\\report.xlsx",
+                currentResults: "C:\\Current\\report.xlsx",
+                repositoryCount: 5);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify ALL initial flow methods are NOT called
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            await _mockCsvService.DidNotReceive().AnalyzeReport();
+            _mockExcelService.DidNotReceive().GetWorkbook();
+            _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
+
+            // Only CompareExcelFiles should be called
+            _mockExcelService.Received(1).CompareExcelFiles(config.CurrentResults, config.PreviousResults, config.OutputFilePath);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallEOLMethods_WhenEOLAnalysisDisabledRegardlessOfRepositoryCount()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false, repositoryCount: 10);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify EOL methods are NOT called even with repositories configured
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
+
+            // Verify other methods are called normally
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockCsvService.Received(1).AnalyzeReport();
+            _mockExcelService.Received(1).GetWorkbook();
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallDownloadMethods_WhenDownloadToolDisabledRegardlessOfOtherSettings()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 5);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            var eolData = new List<PackageData>
+            {
+                new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
+            };
+
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(eolData));
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify download-related methods are NOT called
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+
+            // Verify other methods are called normally
+            await _mockCsvService.Received(1).AnalyzeReport();
+            _mockExcelService.Received(1).GetWorkbook();
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            _mockExcelService.Received(1).AddEOLAnalysisSheet(mockWorkbook, eolData);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallComparisonMethods_WhenInitialFlowIsUsed()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - Verify comparison method is NOT called
+            _mockExcelService.DidNotReceive().CompareExcelFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+
+            // Verify initial flow methods are called
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockCsvService.Received(1).AnalyzeReport();
+            _mockExcelService.Received(1).GetWorkbook();
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldNotCallUnrelatedMethods_WhenSpecificExceptionOccurs()
+        {
+            // Arrange
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var httpException = new HttpRequestException("Network error");
+
+            // Exception occurs during GenerateReport
+            _mockBlackduckReportGenerator.GenerateReport().Returns<Task>(x => throw httpException);
+
+            var program = CreateProgram(config);
+            var cancellationToken = CancellationToken.None;
+
+            // Act
+            await program.StartAsync(cancellationToken);
+
+            // Assert - When GenerateReport fails, subsequent methods should NOT be called
+            await _mockCsvService.DidNotReceive().AnalyzeReport();
+            _mockExcelService.DidNotReceive().GetWorkbook();
+            _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
+            _mockExcelService.DidNotReceive().CompareExcelFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+
+            // Only GenerateReport and Cleanup should be called
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
+
+            // Exception should be logged
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
+        }
     }
 
-    
+
 }

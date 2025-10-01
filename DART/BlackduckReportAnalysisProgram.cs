@@ -166,7 +166,6 @@ namespace BlackduckReportGeneratorTool
                     await _blackduckReportGenerator.Cleanup();
                 }
 
-                // Re-throw to let StartAsync handle the exception
                 throw;
             }
 
