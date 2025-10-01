@@ -1,22 +1,20 @@
 ﻿using BlackduckReportAnalysis;
-using BlackduckReportGeneratorTool.Services.Implementation;
-using Serilog;
-using BlackduckReportGeneratorTool.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using BlackduckReportGeneratorTool;
-using Microsoft.Extensions.Configuration;
-using DART.EOLAnalysis;
-using DART.EOLAnalysis.Services;
-using DART.EOLAnalysis.Clients;
 using BlackduckReportAnalysis.Models;
-using Microsoft.Extensions.Options;
+using BlackduckReportGeneratorTool;
+using BlackduckReportGeneratorTool.Services.Implementation;
+using BlackduckReportGeneratorTool.Services.Interfaces;
+using DART.EOLAnalysis;
+using DART.EOLAnalysis.Clients;
+using DART.EOLAnalysis.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -50,9 +48,12 @@ class Program
 
         using IHost host = builder.Build();
 
-        host.Start();
+        await host.StartAsync();
 
-        return;
+        Console.WriteLine("Press any key to close this window...");
+        Console.ReadLine();
+
+        await host.StopAsync();
 
     }
 }

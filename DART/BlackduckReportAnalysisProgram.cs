@@ -1,10 +1,9 @@
 ﻿using BlackduckReportAnalysis;
 using BlackduckReportAnalysis.Models;
-using Microsoft.Extensions.Configuration;
+using ClosedXML.Excel;
+using DART.EOLAnalysis;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using DART.EOLAnalysis;
-using ClosedXML.Excel;
 using Microsoft.Extensions.Options;
 
 namespace BlackduckReportGeneratorTool
@@ -92,10 +91,6 @@ namespace BlackduckReportGeneratorTool
             {
                 _logger.LogError(ex, "Encountered an exception: {ErrorMessage}", ex.Message);
             }
-
-            Console.WriteLine("Press any key to close this window...");
-            Console.ReadLine();
-
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
