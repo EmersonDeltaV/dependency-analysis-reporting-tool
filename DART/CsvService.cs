@@ -1,5 +1,4 @@
 ﻿using BlackduckReportAnalysis.Models;
-using BlackduckReportGeneratorTool;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
@@ -10,7 +9,7 @@ namespace BlackduckReportAnalysis
     {
         private readonly IBlackduckApiService _blackduckApiService;
         private readonly IExcelService _excelService;
-        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly ILogger<CsvService> _logger;
         private readonly Config _config;
 
         private int projectNameIndex;
@@ -23,7 +22,7 @@ namespace BlackduckReportAnalysis
         public CsvService(IBlackduckApiService blackduckApiService,
                           IExcelService excelService,
                           IConfiguration configuration,
-                          ILogger<BlackduckReportAnalysisProgram> logger)
+                          ILogger<CsvService> logger)
         {
             _blackduckApiService = blackduckApiService;
             _excelService = excelService;

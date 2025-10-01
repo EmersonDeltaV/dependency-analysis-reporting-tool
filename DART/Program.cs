@@ -31,7 +31,7 @@ class Program
         builder.Logging.AddSerilog(logger);
 
         builder.Services.Configure<Config>(configuration);
-        builder.Services.AddHostedService<BlackduckReportAnalysisProgram>();
+        builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddSingleton<ICsvService, CsvService>();
         builder.Services.AddSingleton<IExcelService, ExcelService>();

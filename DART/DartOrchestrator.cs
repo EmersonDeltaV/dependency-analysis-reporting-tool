@@ -1,4 +1,4 @@
-﻿using BlackduckReportAnalysis;
+using BlackduckReportAnalysis;
 using BlackduckReportAnalysis.Models;
 using ClosedXML.Excel;
 using DART.EOLAnalysis;
@@ -8,21 +8,21 @@ using Microsoft.Extensions.Options;
 
 namespace BlackduckReportGeneratorTool
 {
-    public class BlackduckReportAnalysisProgram : IHostedService
+    public class DartOrchestrator : IHostedService
     {
         private readonly IBlackduckReportGenerator _blackduckReportGenerator;
         private readonly ICsvService _csvService;
         private readonly IExcelService _excelService;
         private readonly IEOLAnalysisService _eolAnalysisService;
-        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly ILogger<DartOrchestrator> _logger;
         private readonly Config _config;
 
-        public BlackduckReportAnalysisProgram(IBlackduckReportGenerator blackduckReportGenerator,
+        public DartOrchestrator(IBlackduckReportGenerator blackduckReportGenerator,
                                               IOptions<Config> configOptions,
                                               ICsvService csvService,
                                               IExcelService excelService,
                                               IEOLAnalysisService eolAnalysisService,
-                                              ILogger<BlackduckReportAnalysisProgram> logger)
+                                              ILogger<DartOrchestrator> logger)
         {
             _blackduckReportGenerator = blackduckReportGenerator;
             _config = configOptions.Value ?? throw new ConfigException("Failed to load configuration");

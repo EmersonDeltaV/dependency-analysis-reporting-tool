@@ -12,17 +12,17 @@ using Microsoft.Extensions.Options;
 
 namespace DART.Tests
 {
-    public class BlackduckReportAnalysisProgramTests : IDisposable
+    public class DartOrchestratorTests : IDisposable
     {
         private readonly IBlackduckReportGenerator _mockBlackduckReportGenerator;
         private readonly ICsvService _mockCsvService;
         private readonly IExcelService _mockExcelService;
         private readonly IEOLAnalysisService _mockEOLAnalysisService;
-        private readonly ILogger<BlackduckReportAnalysisProgram> _mockLogger;
+        private readonly ILogger<DartOrchestrator> _mockLogger;
 
         private readonly TextReader _originalConsoleIn;
 
-        public BlackduckReportAnalysisProgramTests()
+        public DartOrchestratorTests()
         {
             // Prevent Console.ReadLine() in StartAsync from blocking tests
             _originalConsoleIn = Console.In;
@@ -32,7 +32,7 @@ namespace DART.Tests
             _mockCsvService = Substitute.For<ICsvService>();
             _mockExcelService = Substitute.For<IExcelService>();
             _mockEOLAnalysisService = Substitute.For<IEOLAnalysisService>();
-            _mockLogger = Substitute.For<ILogger<BlackduckReportAnalysisProgram>>();
+            _mockLogger = Substitute.For<ILogger<DartOrchestrator>>();
         }
 
         public void Dispose()
@@ -92,11 +92,11 @@ namespace DART.Tests
 
         // Removed legacy IConfiguration builder; tests now use IOptions<Config> directly
 
-        private BlackduckReportAnalysisProgram CreateProgram(Config config)
+        private DartOrchestrator CreateProgram(Config config)
         {
             var configOptions = Options.Create(config);
 
-            return new BlackduckReportAnalysisProgram(
+            return new DartOrchestrator(
                 _mockBlackduckReportGenerator,
                 configOptions,
                 _mockCsvService,
@@ -430,7 +430,7 @@ namespace DART.Tests
             var nullOptions = Substitute.For<IOptions<Config>>();
             nullOptions.Value.Returns((Config)null!);
 
-            var exception = Assert.Throws<ConfigException>(() => new BlackduckReportAnalysisProgram(
+            var exception = Assert.Throws<ConfigException>(() => new DartOrchestrator(
                 _mockBlackduckReportGenerator,
                 nullOptions,
                 _mockCsvService,
@@ -638,7 +638,7 @@ namespace DART.Tests
             var configOptions = Options.Create(invalidConfig);
 
             // Act & Assert
-            var exception = Assert.Throws<ConfigException>(() => new BlackduckReportAnalysisProgram(
+            var exception = Assert.Throws<ConfigException>(() => new DartOrchestrator(
                 _mockBlackduckReportGenerator,
                 configOptions,
                 _mockCsvService,
@@ -663,7 +663,7 @@ namespace DART.Tests
             var configOptions = Options.Create(validConfig);
 
             // Act & Assert - Should not throw
-            var program = new BlackduckReportAnalysisProgram(
+            var program = new DartOrchestrator(
                 _mockBlackduckReportGenerator,
                 configOptions,
                 _mockCsvService,
@@ -683,7 +683,7 @@ namespace DART.Tests
             var configOptions = Options.Create(config);
 
             // Act & Assert - Should not throw, should create default FeatureToggles
-            var program = new BlackduckReportAnalysisProgram(
+            var program = new DartOrchestrator(
                 _mockBlackduckReportGenerator,
                 configOptions,
                 _mockCsvService,

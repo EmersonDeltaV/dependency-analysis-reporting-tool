@@ -1,5 +1,4 @@
 ﻿using BlackduckReportAnalysis.Models;
-using BlackduckReportGeneratorTool;
 using ClosedXML.Excel;
 using DART.EOLAnalysis.Models;
 using Microsoft.Extensions.Configuration;
@@ -10,15 +9,14 @@ namespace BlackduckReportAnalysis
 {
     public class ExcelService : IExcelService
     {
-        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly ILogger<ExcelService> _logger;
         private readonly Config _config;
 
         private int currentRow = 8;
         private XLWorkbook xLWorkbook;
         private IXLWorksheet worksheet;
 
-        public ExcelService(IConfiguration configuration,
-                            ILogger<BlackduckReportAnalysisProgram> logger)
+        public ExcelService(IConfiguration configuration, ILogger<ExcelService> logger)
         {
             _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
             _logger = logger;
