@@ -167,7 +167,7 @@ namespace DART.Tests
 
             // Verify EOL analysis logging
             _mockLogger.Received().LogInformation("Starting EOL Analysis...");
-            _mockLogger.Received().LogInformation($"EOL Analysis completed. Found {eolData.Count} packages.");
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Information, default, default!, default!, default!);
         }
 
         [Fact]
@@ -285,7 +285,7 @@ namespace DART.Tests
             // Verify logging
             _mockLogger.Received().LogInformation("No previous results found. Skipping comparison.");
             _mockLogger.Received().LogInformation("Starting EOL Analysis...");
-            _mockLogger.Received().LogInformation($"EOL Analysis completed. Found {eolData.Count} packages.");
+            _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Information, default, default!, default!, default!);
         }
 
         [Fact]

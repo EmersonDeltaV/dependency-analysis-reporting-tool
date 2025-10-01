@@ -31,6 +31,9 @@ namespace BlackduckReportGeneratorTool
             _eolAnalysisService = eolAnalysisService;
             _logger = logger;
 
+            // Ensure feature toggles are non-null to simplify checks
+            _config.FeatureToggles ??= new FeatureToggles();
+
             ValidateConfiguration();
         }
 
@@ -114,7 +117,7 @@ namespace BlackduckReportGeneratorTool
                     if (eolData != null && eolData.Count > 0)
                     {
                         _excelService.AddEOLAnalysisSheet(workbook, eolData);
-                        _logger.LogInformation($"EOL Analysis completed. Found {eolData.Count} packages.");
+                        _logger.LogInformation("EOL Analysis completed. Found {PackageCount} packages.", eolData.Count);
                     }
                     else
                     {
