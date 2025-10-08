@@ -1,11 +1,13 @@
-﻿using BlackduckReportAnalysis;
-using BlackduckReportAnalysis.Models;
 using BlackduckReportGeneratorTool;
 using BlackduckReportGeneratorTool.Services.Implementation;
 using BlackduckReportGeneratorTool.Services.Interfaces;
+using DART;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Clients;
 using DART.EOLAnalysis.Services;
+using DART.Models;
+using DART.Services.Implementation;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

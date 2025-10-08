@@ -1,12 +1,14 @@
-using BlackduckReportAnalysis;
-using BlackduckReportAnalysis.Models;
 using ClosedXML.Excel;
 using DART.EOLAnalysis;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using BlackduckReportGeneratorTool;
+using DART.Services.Interfaces;
+using DART.Models;
+using DART.Exceptions;
 
-namespace BlackduckReportGeneratorTool
+namespace DART
 {
     public class DartOrchestrator : IHostedService
     {
@@ -18,11 +20,11 @@ namespace BlackduckReportGeneratorTool
         private readonly Config _config;
 
         public DartOrchestrator(IBlackduckReportGenerator blackduckReportGenerator,
-                                              IOptions<Config> configOptions,
-                                              ICsvService csvService,
-                                              IExcelService excelService,
-                                              IEOLAnalysisService eolAnalysisService,
-                                              ILogger<DartOrchestrator> logger)
+                                IOptions<Config> configOptions,
+                                ICsvService csvService,
+                                IExcelService excelService,
+                                IEOLAnalysisService eolAnalysisService,
+                                ILogger<DartOrchestrator> logger)
         {
             _blackduckReportGenerator = blackduckReportGenerator;
             _config = configOptions.Value ?? throw new ConfigException("Failed to load configuration");

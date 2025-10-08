@@ -1,7 +1,8 @@
-﻿using Serilog;
+﻿using DART.Services.Implementation;
+using Serilog;
 using Serilog.Core;
 
-namespace BlackduckReportAnalysis
+namespace DART.Logging
 {
     /// <summary>
     /// Provides logging functionality using Serilog.

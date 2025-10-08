@@ -1,7 +1,8 @@
-﻿using BlackduckReportAnalysis.Models;
+﻿using DART.Exceptions;
+using DART.Models;
 using Newtonsoft.Json;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Implementation
 {
     /// <summary>
     /// Provides methods to read and manage the configuration settings.

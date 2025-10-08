@@ -1,14 +1,14 @@
-using BlackduckReportAnalysis;
-using BlackduckReportAnalysis.Models;
 using BlackduckReportGeneratorTool;
+using ClosedXML.Excel;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Models;
+using DART.Exceptions;
+using DART.Models;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NSubstitute;
-using ClosedXML.Excel;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 
 namespace DART.Tests
 {

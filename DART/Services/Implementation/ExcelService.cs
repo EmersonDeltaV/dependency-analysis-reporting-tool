@@ -1,11 +1,13 @@
-﻿using BlackduckReportAnalysis.Models;
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using DART.EOLAnalysis.Models;
+using DART.Exceptions;
+using DART.Models;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Implementation
 {
     public class ExcelService : IExcelService
     {

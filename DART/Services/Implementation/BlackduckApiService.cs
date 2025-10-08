@@ -1,7 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using DART.Logging;
+using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Implementation
 {
 
     /// <summary>

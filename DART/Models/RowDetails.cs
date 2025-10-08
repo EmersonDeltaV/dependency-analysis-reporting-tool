@@ -1,4 +1,4 @@
-﻿namespace BlackduckReportAnalysis.Models
+﻿namespace DART.Models
 {
     public class RowDetails
     {
