@@ -1,6 +1,6 @@
 ﻿using DART.EOLAnalysis.Models;
 
-namespace BlackduckReportAnalysis.Models
+namespace DART.Models
 {
     public class Config
     {

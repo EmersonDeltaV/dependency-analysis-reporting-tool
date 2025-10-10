@@ -1,24 +1,24 @@
-﻿using BlackduckReportAnalysis.Models;
-using BlackduckReportGeneratorTool;
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using DART.EOLAnalysis.Models;
+using DART.Exceptions;
+using DART.Models;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Implementation
 {
     public class ExcelService : IExcelService
     {
-        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly ILogger<ExcelService> _logger;
         private readonly Config _config;
 
         private int currentRow = 8;
         private XLWorkbook xLWorkbook;
         private IXLWorksheet worksheet;
 
-        public ExcelService(IConfiguration configuration,
-                            ILogger<BlackduckReportAnalysisProgram> logger)
+        public ExcelService(IConfiguration configuration, ILogger<ExcelService> logger)
         {
             _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
             _logger = logger;

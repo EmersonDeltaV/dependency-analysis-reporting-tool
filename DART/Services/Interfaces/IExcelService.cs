@@ -1,8 +1,8 @@
-﻿using BlackduckReportAnalysis.Models;
+﻿using DART.Models;
 using DART.EOLAnalysis.Models;
 using ClosedXML.Excel;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Interfaces
 {
     public interface IExcelService
     {

@@ -1,16 +1,17 @@
-﻿using BlackduckReportAnalysis.Models;
-using BlackduckReportGeneratorTool;
+using DART.Exceptions;
+using DART.Models;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
-namespace BlackduckReportAnalysis
+namespace DART.Services.Implementation
 {
     public class CsvService : ICsvService
     {
         private readonly IBlackduckApiService _blackduckApiService;
         private readonly IExcelService _excelService;
-        private readonly ILogger<BlackduckReportAnalysisProgram> _logger;
+        private readonly ILogger<CsvService> _logger;
         private readonly Config _config;
 
         private int projectNameIndex;
@@ -23,7 +24,7 @@ namespace BlackduckReportAnalysis
         public CsvService(IBlackduckApiService blackduckApiService,
                           IExcelService excelService,
                           IConfiguration configuration,
-                          ILogger<BlackduckReportAnalysisProgram> logger)
+                          ILogger<CsvService> logger)
         {
             _blackduckApiService = blackduckApiService;
             _excelService = excelService;

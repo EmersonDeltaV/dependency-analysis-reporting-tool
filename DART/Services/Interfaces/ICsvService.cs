@@ -1,4 +1,4 @@
-﻿namespace BlackduckReportAnalysis
+﻿namespace DART.Services.Interfaces
 {
     public interface ICsvService
     {

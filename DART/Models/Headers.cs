@@ -1,4 +1,4 @@
-﻿namespace BlackduckReportAnalysis.Models
+﻿namespace DART.Models
 {
     /// <summary>
     /// Represents the headers used in the summary report / output file. The order of the headers corresponds to their exact order in the report.

@@ -1,20 +1,22 @@
-﻿using BlackduckReportAnalysis;
-using BlackduckReportGeneratorTool.Services.Implementation;
-using Serilog;
-using BlackduckReportGeneratorTool.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using BlackduckReportGeneratorTool;
-using Microsoft.Extensions.Configuration;
+using BlackduckReportGeneratorTool.Services.Implementation;
+using BlackduckReportGeneratorTool.Services.Interfaces;
+using DART;
 using DART.EOLAnalysis;
-using DART.EOLAnalysis.Services;
 using DART.EOLAnalysis.Clients;
+using DART.EOLAnalysis.Services;
+using DART.Models;
+using DART.Services.Implementation;
+using DART.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -30,7 +32,8 @@ class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
-        builder.Services.AddHostedService<BlackduckReportAnalysisProgram>();
+        builder.Services.Configure<Config>(configuration);
+        builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddSingleton<ICsvService, CsvService>();
         builder.Services.AddSingleton<IExcelService, ExcelService>();
@@ -47,9 +50,12 @@ class Program
 
         using IHost host = builder.Build();
 
-        host.Start();
+        await host.StartAsync();
 
-        return;
+        Console.WriteLine("Press any key to close this window...");
+        Console.ReadLine();
+
+        await host.StopAsync();
 
     }
 }
