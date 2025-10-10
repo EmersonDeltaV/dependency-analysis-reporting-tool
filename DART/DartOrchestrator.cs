@@ -72,6 +72,8 @@ namespace DART
         {
             try
             {
+                _logger.LogInformation("Starting analysis...");
+
                 if (!string.IsNullOrWhiteSpace(_config.PreviousResults) && !string.IsNullOrWhiteSpace(_config.CurrentResults))
                 {
                     RunComparisonFlow();
