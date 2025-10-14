@@ -21,13 +21,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
         private readonly HttpClientHandler httpClientHandler;
         private readonly HttpClient httpClient;
 
-        private static string BearerToken = string.Empty;
+        private string BearerToken = string.Empty;
 
-        public BlackduckApiService(ILogger<BlackduckApiService> logger,
-            IConfiguration configuration)
+        public BlackduckApiService(ILogger<BlackduckApiService> logger, IConfiguration configuration)
         {
-
-
             this.configuration = configuration;
 
             _logger = logger;
@@ -40,11 +37,9 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             {
                 BaseAddress = new Uri(configuration.GetSection(KEY_BASEURL).Value?? string.Empty)
             };
-
-            Task.Run(GetBearerToken).Wait();
         }
 
-        private async Task GetBearerToken()
+        private async Task EnsureBearerTokenConfigured()
         {
             if (!string.IsNullOrEmpty(BearerToken)) return;
 
@@ -62,6 +57,9 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
             var content = await responseToken.Content.ReadAsStringAsync();
             var jsonContent = JObject.Parse(content);
             BearerToken = jsonContent["bearerToken"]?.ToString() ?? throw new Exception("Error getting bearer token.");
+
+            httpClient.DefaultRequestHeaders.Remove("Authorization");
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
         }
 
         public async Task<string> GetRecommendedFix(string vulnerabilityId)
@@ -80,11 +78,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
                 return string.Empty;
             }
 
-            await GetBearerToken();
+            await EnsureBearerTokenConfigured();
 
-            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.vulnerability-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
             var response = await httpClient.GetAsync($"api/vulnerabilities/{cveId}");
 
@@ -107,9 +104,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
 
         public async Task<bool> CreateVulnerabilityStatusReport()
         {
-            httpClient.DefaultRequestHeaders.Clear();
+            await EnsureBearerTokenConfigured();
+
+            httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
             var vulnerabilityReportParameters = configuration
                 .GetSection(KEY_VULNERABILITY_REPORT_PARAMETERS)
@@ -128,9 +126,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
 
         public async Task<string> GetLatestVulnerabilityReportId()
         {
-            httpClient.DefaultRequestHeaders.Clear();
+            await EnsureBearerTokenConfigured();
+
+            httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
             using var response = await httpClient.GetAsync("/api/v1/vulnerability-reports?ascending=false&limit=100&offset=0&sortField=finishedAt");
 
@@ -153,9 +152,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
 
         public async Task<bool> GetVulnerabilityStatusReportCompleteStatus(string reportId)
         {
-            httpClient.DefaultRequestHeaders.Clear();
+            await EnsureBearerTokenConfigured();
+
+            httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
             using var response = await httpClient.GetAsync("/api/v1/vulnerability-reports?ascending=false&limit=100&offset=0&sortField=finishedAt");
 
@@ -177,9 +177,10 @@ namespace BlackduckReportGeneratorTool.Integration.Implementation
 
         public async Task<string> SaveReport(string reportId)
         {
-            httpClient.DefaultRequestHeaders.Clear();
+            await EnsureBearerTokenConfigured();
+
+            httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
 
             using var response = await httpClient.GetAsync($"api/v1/reports/{reportId}.json");
             if (!response.IsSuccessStatusCode)
