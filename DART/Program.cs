@@ -33,7 +33,7 @@ class Program
             Directory.CreateDirectory(logPath);
         }
 
-        var fullLogPath = Path.Combine(logPath ?? "Log", "Blackduck_Report_.log");
+        var fullLogPath = Path.Combine(logPath ?? "Log", "dart_.log");
 
         var logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
