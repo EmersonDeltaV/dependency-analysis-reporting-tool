@@ -37,25 +37,36 @@ namespace DART.EOLAnalysis.Clients
 
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            // PAT is invalid or lacks permissions
+            if (!response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NonAuthoritativeInformation)
             {
-                _logger.LogError("Error retrieving .csproj files from repository {RepositoryName}. StatusCode: {StatusCode}",
-                    repo.RepositoryName, response.StatusCode);
+                _logger.LogError("Failed to retrieve .csproj files from repository '{RepositoryName}'. Status: {StatusCode} ({ReasonPhrase})",
+                    repo.RepositoryName, (int)response.StatusCode, response.ReasonPhrase);
                 return [];
             }
 
-            var content = await response.Content.ReadAsStringAsync();
-            var fileList = JsonSerializer.Deserialize<GitItemsResponse>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            });
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            // Filter for .csproj files
-            return fileList?.Value
-                .Where(item => item.GitObjectType == "blob"
-                            && item.Path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-                            && !item.Path.Contains("UnitTests", StringComparison.OrdinalIgnoreCase))
-                .ToList() ?? new List<GitItem>();
+            try
+            {
+                var fileList = JsonSerializer.Deserialize<GitItemsResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                });
+
+                // Filter for .csproj files
+                return fileList?.Value
+                    .Where(item => item.GitObjectType == "blob"
+                                && item.Path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+                                && !item.Path.Contains("UnitTests", StringComparison.OrdinalIgnoreCase))
+                    .ToList() ?? new List<GitItem>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError("Failed to parse JSON response from Azure DevOps API for repository '{RepositoryName}'. Error: {ErrorMessage}",
+                    repo.RepositoryName, ex.Message);
+                return [];
+            }
         }
 
         public async Task<string> GetFileContentAsync(Repository repo, string filePath, CancellationToken cancellationToken = default)
@@ -66,12 +77,13 @@ namespace DART.EOLAnalysis.Clients
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Error retrieving file content for {FilePath} from repository {RepositoryName}. StatusCode: {StatusCode}",
-                    filePath, repo.RepositoryName, response.StatusCode);
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogWarning("Failed to retrieve file content for '{FilePath}' from repository '{RepositoryName}'. Status: {StatusCode} ({ReasonPhrase}). Response: {ErrorContent}",
+                    filePath, repo.RepositoryName, (int)response.StatusCode, response.ReasonPhrase, errorContent);
                 return string.Empty;
             }
 
-            return await response.Content.ReadAsStringAsync();
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
         public void Dispose()
