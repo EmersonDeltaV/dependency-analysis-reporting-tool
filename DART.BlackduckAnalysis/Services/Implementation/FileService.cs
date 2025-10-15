@@ -1,12 +1,7 @@
-﻿using DART.BlackduckAnalysis.Models.ServiceResult;
+﻿using DART.BlackduckAnalysis.Models;
 using DART.BlackduckAnalysis.Services.Interfaces;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DART.BlackduckAnalysis.Services.Implementation
 {

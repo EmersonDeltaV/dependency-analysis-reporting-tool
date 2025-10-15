@@ -1,4 +1,4 @@
-﻿using DART.BlackduckAnalysis.Models.Configuration;
+﻿using DART.BlackduckAnalysis.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

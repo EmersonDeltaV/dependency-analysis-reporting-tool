@@ -1,4 +1,4 @@
-﻿namespace DART.BlackduckAnalysis.Models.ServiceResult
+﻿namespace DART.BlackduckAnalysis.Models
 {
     public class ExtractResult(string resultPath)
     {
