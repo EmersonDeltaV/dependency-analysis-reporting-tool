@@ -26,14 +26,22 @@ namespace DART.EOLAnalysis.Services
 
                 var projectInfos = await FindProjectFilesAsync(repository, azureDevOpsClient, cancellationToken);
 
-                _logger.LogInformation("Found {ProjectCount} .csproj files in repository {RepositoryName}",
-                    projectInfos.Count, repository.Name);
+                if (projectInfos.Count == 0)
+                {
+                    _logger.LogWarning("Empty .csproj files found in repository '{RepositoryName}'. This may indicate access issues, invalid Azure token (PAT), or the repository may not contain .NET projects.",
+                        repository.Name);
+                }
+                else
+                {
+                    _logger.LogInformation("Found {ProjectCount} .csproj files in repository {RepositoryName}",
+                        projectInfos.Count, repository.Name);
+                }
 
                 return projectInfos;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing repository {RepositoryName}: {ErrorMessage}",
+                _logger.LogError(ex, "Error processing repository '{RepositoryName}': {ErrorMessage}",
                     repository.Name, ex.Message);
                 throw;
             }
@@ -41,10 +49,16 @@ namespace DART.EOLAnalysis.Services
 
         private async Task<List<ProjectInfo>> FindProjectFilesAsync(Repository repository, IAzureDevOpsClient azureDevOpsClient, CancellationToken cancellationToken)
         {
-            var projectInfos = new List<ProjectInfo>();
-
             // Find all .csproj files in the repository
             var gitItems = await azureDevOpsClient.FindCsProjFilesAsync(repository, cancellationToken);
+
+            // Return early if no project files found
+            if (gitItems == null || gitItems.Count == 0)
+            {
+                return [];
+            }
+
+            var projectInfos = new List<ProjectInfo>();
 
             foreach (var gitItem in gitItems)
             {

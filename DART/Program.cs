@@ -26,9 +26,30 @@ class Program
 
         builder.Configuration.AddConfiguration(configuration);
 
-        var logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration)
-                                                .Enrich.FromLogContext()
-                                                .CreateLogger();
+        // Create log directory and configure Serilog with user's LogPath
+        var logPath = configuration.GetValue<string>("LogPath");
+        if (!string.IsNullOrEmpty(logPath) && !Directory.Exists(logPath))
+        {
+            Directory.CreateDirectory(logPath);
+        }
+
+        var fullLogPath = Path.Combine(logPath ?? "Log", "dart_.log");
+
+        var logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Error)
+            .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Debug)
+            .Enrich.FromLogContext()
+            .WriteTo.File(fullLogPath,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message}{NewLine}{Exception}",
+                rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 4194304,
+                retainedFileCountLimit: 10,
+                rollingInterval: RollingInterval.Day)
+            .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} <s:{SourceContext}>{NewLine}{Exception}")
+            .CreateLogger();
+
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
