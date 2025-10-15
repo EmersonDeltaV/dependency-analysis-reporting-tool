@@ -3,7 +3,7 @@ using DART.EOLAnalysis;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using BlackduckReportGeneratorTool;
+using DART.BlackduckAnalysis;
 using DART.Services.Interfaces;
 using DART.Models;
 using DART.Exceptions;

@@ -1,8 +1,8 @@
-﻿using BlackduckReportGeneratorTool.Services.Interfaces;
+﻿using DART.BlackduckAnalysis.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace BlackduckReportGeneratorTool
+namespace DART.BlackduckAnalysis
 {
     public class BlackduckReportGenerator: IBlackduckReportGenerator
     {

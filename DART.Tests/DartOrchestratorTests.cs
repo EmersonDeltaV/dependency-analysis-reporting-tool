@@ -1,4 +1,4 @@
-using BlackduckReportGeneratorTool;
+using DART.BlackduckAnalysis;
 using ClosedXML.Excel;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Models;

@@ -1,4 +1,4 @@
-﻿namespace BlackduckReportGeneratorTool.Services.Interfaces
+﻿namespace DART.BlackduckAnalysis.Services.Interfaces
 {
     public interface IBlackduckReportService
     {

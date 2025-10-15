@@ -1,11 +1,11 @@
-﻿using BlackduckReportGeneratorTool.Models.ServiceResult;
+﻿using DART.BlackduckAnalysis.Models.ServiceResult;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BlackduckReportGeneratorTool.Services.Interfaces
+namespace DART.BlackduckAnalysis.Services.Interfaces
 {
     public interface IFileService
     {

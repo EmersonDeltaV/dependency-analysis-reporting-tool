@@ -1,4 +1,4 @@
-﻿using BlackduckReportGeneratorTool.Models.Configuration;
+﻿using DART.BlackduckAnalysis.Models.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace BlackduckReportGeneratorTool.Integration.Implementation
+namespace DART.BlackduckAnalysis.Integration.Implementation
 {
     public class BlackduckApiService : IBlackduckApiService
     {
