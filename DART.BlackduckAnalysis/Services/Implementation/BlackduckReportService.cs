@@ -1,7 +1,6 @@
-﻿using DART.BlackduckAnalysis.Services.Interfaces;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
-namespace DART.BlackduckAnalysis.Services.Implementation
+namespace DART.BlackduckAnalysis
 {
     public class BlackduckReportService : IBlackduckReportService
     {

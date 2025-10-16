@@ -1,12 +1,12 @@
 using ClosedXML.Excel;
+using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
+using DART.Exceptions;
+using DART.Models;
+using DART.Services.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using DART.BlackduckAnalysis;
-using DART.Services.Interfaces;
-using DART.Models;
-using DART.Exceptions;
 
 namespace DART
 {

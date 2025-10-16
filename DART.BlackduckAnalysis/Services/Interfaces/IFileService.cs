@@ -1,6 +1,4 @@
-﻿using DART.BlackduckAnalysis.Models;
-
-namespace DART.BlackduckAnalysis.Services.Interfaces
+﻿namespace DART.BlackduckAnalysis
 {
     public interface IFileService
     {

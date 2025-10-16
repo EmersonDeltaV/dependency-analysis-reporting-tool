@@ -1,5 +1,4 @@
-﻿using DART.BlackduckAnalysis.Services.Interfaces;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace DART.BlackduckAnalysis

@@ -1,7 +1,5 @@
-using DART.BlackduckAnalysis;
-using DART.BlackduckAnalysis.Services.Implementation;
-using DART.BlackduckAnalysis.Services.Interfaces;
 using DART;
+using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Clients;
 using DART.EOLAnalysis.Services;
@@ -60,7 +58,7 @@ class Program
         builder.Services.AddSingleton<IExcelService, ExcelService>();
         builder.Services.AddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
         builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
-        builder.Services.AddSingleton<IBlackduckApiService, DART.BlackduckAnalysis.Integration.Implementation.BlackduckApiService>();
+        builder.Services.AddSingleton<IBlackduckApiService, BlackduckApiService>();
         builder.Services.AddSingleton<IFileService, FileService>();
         builder.Services.AddSingleton<IEOLAnalysisService, EOLAnalysisService>();
         builder.Services.AddSingleton<INugetMetadataService, NugetMetadataService>();

@@ -1,9 +1,7 @@
-﻿using DART.BlackduckAnalysis.Models;
-using DART.BlackduckAnalysis.Services.Interfaces;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.IO.Compression;
 
-namespace DART.BlackduckAnalysis.Services.Implementation
+namespace DART.BlackduckAnalysis
 {
     public class FileService(ILogger<FileService> logger) : IFileService
     {
