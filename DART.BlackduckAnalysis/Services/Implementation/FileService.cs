@@ -1,14 +1,7 @@
-﻿using BlackduckReportGeneratorTool.Models.ServiceResult;
-using BlackduckReportGeneratorTool.Services.Interfaces;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.Logging;
 using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace BlackduckReportGeneratorTool.Services.Implementation
+namespace DART.BlackduckAnalysis
 {
     public class FileService(ILogger<FileService> logger) : IFileService
     {

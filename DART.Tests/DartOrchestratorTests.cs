@@ -1,11 +1,10 @@
-using BlackduckReportGeneratorTool;
 using ClosedXML.Excel;
+using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Models;
 using DART.Exceptions;
 using DART.Models;
 using DART.Services.Interfaces;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;

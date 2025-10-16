@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DART\DART.csproj" />
-    <ProjectReference Include="..\BlackduckReportGenerator\BlackduckReportGeneratorTool.csproj" />
+    <ProjectReference Include="..\DART.BlackduckAnalysis\DART.BlackduckAnalysis.csproj" />
     <ProjectReference Include="..\DART.EOLAnalysis\DART.EOLAnalysis.csproj" />
   </ItemGroup>
 

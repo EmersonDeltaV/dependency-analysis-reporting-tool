@@ -1,3 +1,4 @@
+using DART.BlackduckAnalysis;
 using DART.Exceptions;
 using DART.Models;
 using DART.Services.Interfaces;
