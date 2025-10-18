@@ -1,4 +1,3 @@
-﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,66 +8,59 @@ namespace DART.BlackduckAnalysis
 {
     public class BlackduckApiService : IBlackduckApiService
     {
-        private const string KEY_VULNERABILITY_REPORT_PARAMETERS = "DownloadConfiguration:VulnerabilityReportParameters";
-        private const string KEY_BASEURL = "BaseUrl";
-        private const string KEY_TOKEN = "BlackduckToken";
-        private const string KEY_REPORT_FOLDER_PATH = "ReportFolderPath";
-        private const string DL_FOLDER_PATH = "Downloaded";
-
-        private readonly IConfiguration configuration;
         private readonly ILogger _logger;
-        private readonly HttpClientHandler httpClientHandler;
-        private readonly HttpClient httpClient;
+        private string _bearerToken = string.Empty;
 
-        private string BearerToken = string.Empty;
-
-        public BlackduckApiService(ILogger<BlackduckApiService> logger, IConfiguration configuration)
+        public BlackduckApiService(ILogger<BlackduckApiService> logger)
         {
-            this.configuration = configuration;
-
             _logger = logger;
+        }
 
-            httpClientHandler = new HttpClientHandler()
+        private static HttpClient CreateClient(string baseUrl)
+        {
+            var handler = new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; }
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
             };
-            httpClient = new HttpClient(httpClientHandler)
+            return new HttpClient(handler)
             {
-                BaseAddress = new Uri(configuration.GetSection(KEY_BASEURL).Value?? string.Empty)
+                BaseAddress = new Uri(baseUrl)
             };
         }
 
-        private async Task EnsureBearerTokenConfigured()
+        private async Task EnsureBearerTokenConfigured(HttpClient httpClient, BlackduckConfiguration config)
         {
-            if (!string.IsNullOrEmpty(BearerToken)) return;
-
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.user-4+json");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"token {configuration.GetSection(KEY_TOKEN).Value}");
 
-            var responseToken = await httpClient.PostAsync("api/tokens/authenticate", null);
-
-            if (!responseToken.IsSuccessStatusCode)
+            if (string.IsNullOrEmpty(_bearerToken))
             {
-                throw new Exception($"Error getting bearer token. StatusCode={responseToken.StatusCode}");
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"token {config.Token}");
+
+                using var responseToken = await httpClient.PostAsync("api/tokens/authenticate", null);
+
+                if (!responseToken.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Error getting bearer token. StatusCode={responseToken.StatusCode}");
+                }
+
+                var content = await responseToken.Content.ReadAsStringAsync();
+                var jsonContent = JObject.Parse(content);
+                _bearerToken = jsonContent["bearerToken"]?.ToString() ?? throw new Exception("Error getting bearer token.");
             }
 
-            var content = await responseToken.Content.ReadAsStringAsync();
-            var jsonContent = JObject.Parse(content);
-            BearerToken = jsonContent["bearerToken"]?.ToString() ?? throw new Exception("Error getting bearer token.");
-
             httpClient.DefaultRequestHeaders.Remove("Authorization");
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {BearerToken}");
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_bearerToken}");
         }
 
-        public async Task<string> GetRecommendedFix(string vulnerabilityId)
+        public async Task<string> GetRecommendedFix(BlackduckConfiguration config, string vulnerabilityId)
         {
             if (string.IsNullOrWhiteSpace(vulnerabilityId))
             {
                 return string.Empty;
             }
 
-            string cvePattern = @"CVE-\d{4}-\d{4,7}\s?"; // Matches CVE- followed by 4
+            string cvePattern = @"CVE-\d{4}-\d{4,7}\s?";
             string cveId = Regex.Replace(vulnerabilityId, cvePattern, "").Trim();
             cveId = Regex.Replace(cveId, @"\(([^)]+)\)", "$1").Trim();
 
@@ -77,12 +69,18 @@ namespace DART.BlackduckAnalysis
                 return string.Empty;
             }
 
-            await EnsureBearerTokenConfigured();
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
 
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.vulnerability-4+json");
 
-            var response = await httpClient.GetAsync($"api/vulnerabilities/{cveId}");
+            using var response = await httpClient.GetAsync($"api/vulnerabilities/{cveId}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -94,26 +92,32 @@ namespace DART.BlackduckAnalysis
             var jsonContent = JObject.Parse(content);
             var recommendedFix = jsonContent["solution"]?.ToString() ?? string.Empty;
 
-            // Removing all asterisks and texts inside parentheses
             recommendedFix = Regex.Replace(recommendedFix, @"[\*\[\]\n]", "").Trim();
             recommendedFix = Regex.Replace(recommendedFix, @"\([^)]+\)", "").Trim();
 
             return recommendedFix;
         }
 
-        public async Task<bool> CreateVulnerabilityStatusReport()
+        public async Task<bool> CreateVulnerabilityStatusReport(BlackduckConfiguration config)
         {
-            await EnsureBearerTokenConfigured();
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
 
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-            var vulnerabilityReportParameters = configuration
-                .GetSection(KEY_VULNERABILITY_REPORT_PARAMETERS)
-                .Get<VulnerabilityReportParameters>();
+            var apiPayload = new
+            {
+                projects = config.BlackduckRepositories?.Select(p => p.Url).ToList() ?? new List<string>(),
+                reportFormat = "CSV"
+            };
 
-            var text = JsonConvert.SerializeObject(vulnerabilityReportParameters);
-
+            var text = JsonConvert.SerializeObject(apiPayload);
             var httpContent = new StringContent(text, Encoding.UTF8, "application/json");
 
             using var response = await httpClient.PostAsync("/api/vulnerability-status-reports", httpContent);
@@ -123,9 +127,15 @@ namespace DART.BlackduckAnalysis
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<string> GetLatestVulnerabilityReportId()
+        public async Task<string> GetLatestVulnerabilityReportId(BlackduckConfiguration config)
         {
-            await EnsureBearerTokenConfigured();
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
 
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -149,9 +159,15 @@ namespace DART.BlackduckAnalysis
             return latestReportId;
         }
 
-        public async Task<bool> GetVulnerabilityStatusReportCompleteStatus(string reportId)
+        public async Task<bool> GetVulnerabilityStatusReportCompleteStatus(BlackduckConfiguration config, string reportId)
         {
-            await EnsureBearerTokenConfigured();
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
 
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -174,9 +190,15 @@ namespace DART.BlackduckAnalysis
             return bool.Parse(report?["complete"]?.ToString() ?? bool.FalseString);
         }
 
-        public async Task<string> SaveReport(string reportId)
+        public async Task<string> SaveReport(BlackduckConfiguration config, string reportId, string reportFolderPath)
         {
-            await EnsureBearerTokenConfigured();
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
 
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
@@ -188,22 +210,19 @@ namespace DART.BlackduckAnalysis
                 return string.Empty;
             }
 
-            var folderPath = Path.Combine(configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value, DL_FOLDER_PATH);
+            var folderPath = Path.Combine(reportFolderPath, config.DownloadedReportsFolderName);
 
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
-            // Path to save the file
             var filePath = Path.Combine(folderPath, $"{reportId}.zip");
 
-            // Read the content into a MemoryStream and then write to file
             using var ms = await response.Content.ReadAsStreamAsync();
             using var fs = File.Create(filePath);
             await ms.CopyToAsync(fs);
             fs.Flush();
-
 
             _logger.LogInformation($"File Saved");
 

@@ -44,16 +44,22 @@ namespace DART.Tests
         {
             return new Config
             {
-                ReportFolderPath = "C:\\Reports",
-                OutputFilePath = "C:\\Output",
-                BlackduckToken = "test-token",
-                BaseUrl = "https://test.blackduck.com",
-                LogPath = "C:\\Logs",
-                ProductName = "TestProduct",
-                ProductVersion = "1.0",
-                ProductIteration = "1",
-                PreviousResults = string.Empty,
-                CurrentResults = string.Empty,
+                ReportConfiguration = new ReportConfiguration
+                {
+                    ReportFolderPath = "C:\\Reports",
+                    OutputFilePath = "C:\\Output",
+                    LogPath = "C:\\Logs",
+                    ProductName = "TestProduct",
+                    ProductVersion = "1.0",
+                    ProductIteration = "1"
+                },
+                BlackduckConfiguration = new BlackduckConfiguration
+                {
+                    Token = "test-token",
+                    BaseUrl = "https://test.blackduck.com",
+                    PreviousResults = string.Empty,
+                    CurrentResults = string.Empty
+                },
                 FeatureToggles = new FeatureToggles
                 {
                     EnableDownloadTool = false,
@@ -69,8 +75,8 @@ namespace DART.Tests
             var config = CreateDefaultConfig();
             config.FeatureToggles.EnableDownloadTool = enableDownloadTool;
             config.FeatureToggles.EnableEOLAnalysis = enableEOLAnalysis;
-            config.PreviousResults = previousResults;
-            config.CurrentResults = currentResults;
+            config.BlackduckConfiguration.PreviousResults = previousResults;
+            config.BlackduckConfiguration.CurrentResults = currentResults;
 
             if (repositoryCount > 0)
             {
@@ -408,7 +414,7 @@ namespace DART.Tests
 
             // Assert
             // 1.7.1 CompareExcelFiles(current, previous, output) called once
-            _mockExcelService.Received(1).CompareExcelFiles(config.CurrentResults, config.PreviousResults, config.OutputFilePath);
+            _mockExcelService.Received(1).CompareExcelFiles(config.BlackduckConfiguration.CurrentResults, config.BlackduckConfiguration.PreviousResults, config.ReportConfiguration.OutputFilePath);
 
             // 1.7.2 Other calls (download/analyze/eol/save/cleanup) NOT called
             await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
@@ -627,12 +633,18 @@ namespace DART.Tests
             var invalidConfig = new Config
             {
                 // Missing required fields
-                ReportFolderPath = "",
-                OutputFilePath = "",
-                BlackduckToken = "",
-                BaseUrl = "",
-                ProductName = "",
-                ProductVersion = ""
+                ReportConfiguration = new ReportConfiguration
+                {
+                    ReportFolderPath = "",
+                    OutputFilePath = "",
+                    ProductName = "",
+                    ProductVersion = ""
+                },
+                BlackduckConfiguration = new BlackduckConfiguration
+                {
+                    Token = "",
+                    BaseUrl = ""
+                }
             };
             var configOptions = Options.Create(invalidConfig);
 
@@ -858,7 +870,7 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert - Only CompareExcelFiles should be called
-            _mockExcelService.Received(1).CompareExcelFiles(config.CurrentResults, config.PreviousResults, config.OutputFilePath);
+            _mockExcelService.Received(1).CompareExcelFiles(config.BlackduckConfiguration.CurrentResults, config.BlackduckConfiguration.PreviousResults, config.ReportConfiguration.OutputFilePath);
 
             // Verify that no other workflow methods are called
             await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
@@ -930,7 +942,7 @@ namespace DART.Tests
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
 
             // Only CompareExcelFiles should be called
-            _mockExcelService.Received(1).CompareExcelFiles(config.CurrentResults, config.PreviousResults, config.OutputFilePath);
+            _mockExcelService.Received(1).CompareExcelFiles(config.BlackduckConfiguration.CurrentResults, config.BlackduckConfiguration.PreviousResults, config.ReportConfiguration.OutputFilePath);
         }
 
         [Fact]

@@ -43,22 +43,22 @@ namespace DART
         {
             var errors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(_config.ReportFolderPath))
+            if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.ReportFolderPath))
                 errors.Add("ReportFolderPath is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.OutputFilePath))
+            if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.OutputFilePath))
                 errors.Add("OutputFilePath is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.BaseUrl))
-                errors.Add("BaseUrl is required but not configured");
+            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.BaseUrl))
+                errors.Add("BlackduckConfiguration:BaseUrl is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.BlackduckToken))
-                errors.Add("BlackduckToken is required but not configured");
+            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.Token))
+                errors.Add("BlackduckConfiguration:Token is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.ProductName))
+            if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.ProductName))
                 errors.Add("ProductName is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.ProductVersion))
+            if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.ProductVersion))
                 errors.Add("ProductVersion is required but not configured");
 
             if (errors.Count > 0)
@@ -74,7 +74,7 @@ namespace DART
             {
                 _logger.LogInformation("Starting analysis...");
 
-                if (!string.IsNullOrWhiteSpace(_config.PreviousResults) && !string.IsNullOrWhiteSpace(_config.CurrentResults))
+                if (!string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) && !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
                 {
                     RunComparisonFlow();
                     return;
@@ -84,7 +84,7 @@ namespace DART
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Could not reach {BaseUrl}. Please ensure that you are connected to the corporate VPN. Error: {ErrorMessage}", _config.BaseUrl, ex.Message);
+                _logger.LogError(ex, "Could not reach {BaseUrl}. Please ensure that you are connected to the corporate VPN. Error: {ErrorMessage}", _config.BlackduckConfiguration.BaseUrl, ex.Message);
             }
             catch (ArgumentException ex)
             {
@@ -105,7 +105,7 @@ namespace DART
 
         private void RunComparisonFlow()
         {
-            _excelService.CompareExcelFiles(_config.CurrentResults, _config.PreviousResults, _config.OutputFilePath);
+            _excelService.CompareExcelFiles(_config.BlackduckConfiguration.CurrentResults, _config.BlackduckConfiguration.PreviousResults, _config.ReportConfiguration.OutputFilePath);
         }
 
         private async Task RunEolAnalysisAsync(IXLWorkbook workbook, CancellationToken cancellationToken)
@@ -143,6 +143,7 @@ namespace DART
             {
                 if (_config.FeatureToggles.EnableDownloadTool)
                 {
+                    _blackduckReportGenerator.SetRuntimeConfig(_config.BlackduckConfiguration, _config.ReportConfiguration.ReportFolderPath);
                     await _blackduckReportGenerator.GenerateReport();
                 }
 

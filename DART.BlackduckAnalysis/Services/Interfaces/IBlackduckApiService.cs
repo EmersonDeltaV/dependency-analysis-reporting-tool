@@ -1,16 +1,16 @@
-﻿namespace DART.BlackduckAnalysis
+namespace DART.BlackduckAnalysis
 {
     public interface IBlackduckApiService
     {
-        Task<bool> CreateVulnerabilityStatusReport();
+        Task<bool> CreateVulnerabilityStatusReport(BlackduckConfiguration config);
 
-        Task<string> GetLatestVulnerabilityReportId();
+        Task<string> GetLatestVulnerabilityReportId(BlackduckConfiguration config);
 
-        Task<bool> GetVulnerabilityStatusReportCompleteStatus(string reportId);
+        Task<bool> GetVulnerabilityStatusReportCompleteStatus(BlackduckConfiguration config, string reportId);
 
-        Task<string> SaveReport(string reportId);
+        Task<string> SaveReport(BlackduckConfiguration config, string reportId, string reportFolderPath);
 
-        Task<string> GetRecommendedFix(string CVECode);
+        Task<string> GetRecommendedFix(BlackduckConfiguration config, string CVECode);
 
     }
 }

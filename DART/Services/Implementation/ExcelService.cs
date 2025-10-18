@@ -43,13 +43,13 @@ namespace DART.Services.Implementation
             worksheet.Range(2, 1, 2, 11).Merge();
             worksheet.Range(3, 1, 3, 11).Merge();
 
-            worksheet.Cell(1, 1).Value = _config.ProductName;
+            worksheet.Cell(1, 1).Value = _config.ReportConfiguration.ProductName;
             worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(2, 1).Value = _config.ProductVersion;
+            worksheet.Cell(2, 1).Value = _config.ReportConfiguration.ProductVersion;
             worksheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(3, 1).Value = _config.ProductIteration;
+            worksheet.Cell(3, 1).Value = _config.ReportConfiguration.ProductIteration;
             worksheet.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             var cellBefore = worksheet.Cell(4, 1);
@@ -130,7 +130,7 @@ namespace DART.Services.Implementation
         public void SaveReport()
         {
             worksheet.Columns().AdjustToContents();
-            xLWorkbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            xLWorkbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();
         }
@@ -151,7 +151,7 @@ namespace DART.Services.Implementation
         /// <param name="workbook">The workbook to save.</param>
         public void SaveWorkbook(IXLWorkbook workbook)
         {
-            workbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            workbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Analysis is completed and report was generated successfully.");
             workbook.Dispose();
         }
@@ -290,7 +290,7 @@ namespace DART.Services.Implementation
 
                 FormatHeader(outputWorksheet);
                 outputWorksheet.Columns().AdjustToContents();
-                outputWorkbook.SaveAs(Path.Combine(_config.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            outputWorkbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             }
         }
     }
