@@ -1,7 +1,7 @@
 namespace DART.BlackduckAnalysis
 {
     /// <summary>
-    /// Strongly-typed configuration for BlackDuck API integration
+    /// Configuration for BlackDuck API integration
     /// </summary>
     public class BlackduckConfiguration
     {
@@ -11,7 +11,7 @@ namespace DART.BlackduckAnalysis
         public string BaseUrl { get; set; } = string.Empty;
 
         /// <summary>
-        /// BlackDuck API authentication token
+        /// BlackDuck access token
         /// </summary>
         public string Token { get; set; } = string.Empty;
 
@@ -26,7 +26,7 @@ namespace DART.BlackduckAnalysis
         public string ProjectVersionsToInclude { get; set; } = string.Empty;
 
         /// <summary>
-        /// Path to previous results file for comparison
+        /// Path to previous DART scan result file for comparison
         /// </summary>
         public string PreviousResults { get; set; } = string.Empty;
 

@@ -1,39 +1,48 @@
 {
-  "ReportFolderPath": "",
-  "OutputFilePath": "",
-  "IncludeTransitiveDependency": "false",
-  "BlackduckToken": "",
-  "BaseUrl": "https://blackduck.emrsn.org",
-  "LogPath": "",
-  "ProjectVersionsToInclude": "",
-  "ProductName": "Product Name",
-  "ProductVersion": "Version Number",
-  "ProductIteration": "Product Iteration (PI) or Date",
-  "PreviousResults": "",
-  "CurrentResults": "",
-  "DownloadConfiguration": {
-    "VulnerabilityReportParameters": {
-      "reportFormat": "CSV",
-      "projectLinks": [
-      ]
-    },
+  "ReportConfiguration": {
+    "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
+    "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis",
+    "LogPath": "C:\\BlackDuck",
+    "ProductName": "ProductName",
+    "ProductVersion": "v1.0",
+    "ProductIteration": "PIXX"
+  },
+  "BlackduckConfiguration": {
+    "BaseUrl": "https://blackduck.emrsn.org",
+    "Token": "<YOUR_BLACKDUCK_ACCESS_TOKEN>",
+    "IncludeTransitiveDependency": "true",
+    "ProjectVersionsToInclude": "main",
+    "PreviousResults": "",
+    "CurrentResults": "",
+    "DownloadedReportsFolderName": "Downloaded",
+    "BlackduckRepositories": [
+      {
+        "Name": "Project_Name1",
+        "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      },
+      {
+        "Name": "Project_Name2",
+        "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      }
+    ],
     "DownloadParameters": {
-      "MaxTries": 20
+      "MaxTries": 20,
+      "PollingDelayMilliseconds": 5000
     }
   },
   "EOLAnalysis": {
-    "Pat": "",
+    "Pat": "<YOUR_PERSONAL_ACCESS_TOKEN>",
     "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
       {
-        "Name": "",
-        "Url": "",
-        "Branch": ""
+        "Name": "Project_Name1",
+        "Url": "https://dev.azure.com/EmersonPSS/PSS/_git/Project_Name1",
+        "Branch": "main"
       },
       {
-        "Name": "",
-        "Url": "",
-        "Branch": ""
+        "Name": "Project_Name2",
+        "Url": "https://dev.azure.com/EmersonPSS/PSS/_git/Project_Name2",
+        "Branch": "main"
       }
     ],
     "PackageRecommendation": {
