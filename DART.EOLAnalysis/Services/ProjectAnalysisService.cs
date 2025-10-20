@@ -61,6 +61,7 @@ namespace DART.EOLAnalysis.Services
                         var packageData = new PackageData()
                         {
                             Id = id,
+                            Repository = projectInfo.RepositoryName,
                             Project = projectInfo.Name,
                             Version = version
                         };
@@ -86,6 +87,7 @@ namespace DART.EOLAnalysis.Services
                             packageDataList.Add(new PackageData()
                             {
                                 Id = id,
+                                Repository = projectInfo.RepositoryName,
                                 Project = projectInfo.Name,
                                 Version = version,
                                 Action = $"Error: {ex.Message}"

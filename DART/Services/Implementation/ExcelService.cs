@@ -167,15 +167,16 @@ namespace DART.Services.Implementation
 
             // Add headers
             eolWorksheet.Cell(1, 1).Value = "Package ID";
-            eolWorksheet.Cell(1, 2).Value = "Project";
-            eolWorksheet.Cell(1, 3).Value = "Current Version";
-            eolWorksheet.Cell(1, 4).Value = "Version Date";
-            eolWorksheet.Cell(1, 5).Value = "Age (Days)";
-            eolWorksheet.Cell(1, 6).Value = "Latest Version";
-            eolWorksheet.Cell(1, 7).Value = "Latest Version Date";
-            eolWorksheet.Cell(1, 8).Value = "License";
-            eolWorksheet.Cell(1, 9).Value = "License URL";
-            eolWorksheet.Cell(1, 10).Value = "Recommended Action";
+            eolWorksheet.Cell(1, 2).Value = "Repository";
+            eolWorksheet.Cell(1, 3).Value = "Project";
+            eolWorksheet.Cell(1, 4).Value = "Current Version";
+            eolWorksheet.Cell(1, 5).Value = "Version Date";
+            eolWorksheet.Cell(1, 6).Value = "Age (Days)";
+            eolWorksheet.Cell(1, 7).Value = "Latest Version";
+            eolWorksheet.Cell(1, 8).Value = "Latest Version Date";
+            eolWorksheet.Cell(1, 9).Value = "License";
+            eolWorksheet.Cell(1, 10).Value = "License URL";
+            eolWorksheet.Cell(1, 11).Value = "Recommended Action";
 
             // Format headers
             eolWorksheet.Row(1).Style.Font.Bold = true;
@@ -187,26 +188,27 @@ namespace DART.Services.Implementation
             foreach (var item in eolData)
             {
                 eolWorksheet.Cell(row, 1).Value = item.Id;
-                eolWorksheet.Cell(row, 2).Value = item.Project;
-                eolWorksheet.Cell(row, 3).Value = item.Version;
-                eolWorksheet.Cell(row, 4).Value = item.VersionDate;
-                eolWorksheet.Cell(row, 5).Value = item.Age;
-                eolWorksheet.Cell(row, 6).Value = item.LatestVersion;
-                eolWorksheet.Cell(row, 7).Value = item.LatestVersionDate;
-                eolWorksheet.Cell(row, 8).Value = item.License;
-                eolWorksheet.Cell(row, 9).Value = item.LicenseUrl;
-                eolWorksheet.Cell(row, 10).Value = item.Action;
+                eolWorksheet.Cell(row, 2).Value = item.Repository;
+                eolWorksheet.Cell(row, 3).Value = item.Project;
+                eolWorksheet.Cell(row, 4).Value = item.Version;
+                eolWorksheet.Cell(row, 5).Value = item.VersionDate;
+                eolWorksheet.Cell(row, 6).Value = item.Age;
+                eolWorksheet.Cell(row, 7).Value = item.LatestVersion;
+                eolWorksheet.Cell(row, 8).Value = item.LatestVersionDate;
+                eolWorksheet.Cell(row, 9).Value = item.License;
+                eolWorksheet.Cell(row, 10).Value = item.LicenseUrl;
+                eolWorksheet.Cell(row, 11).Value = item.Action;
                 row++;
             }
 
             // Auto-fit columns and apply borders
             eolWorksheet.ColumnsUsed().AdjustToContents();
-            var dataRange = eolWorksheet.Range(1, 1, row - 1, 10);
+            var dataRange = eolWorksheet.Range(1, 1, row - 1, 11);
             dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
             // Set auto-filter for the header row
-            eolWorksheet.Range(1, 1, 1, 10).SetAutoFilter();
+            eolWorksheet.Range(1, 1, 1, 11).SetAutoFilter();
 
             _logger.LogInformation($"EOL Analysis worksheet added with {eolData.Count} packages.");
         }

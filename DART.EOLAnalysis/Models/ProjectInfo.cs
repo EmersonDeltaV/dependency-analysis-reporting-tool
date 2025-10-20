@@ -5,5 +5,6 @@ namespace DART.EOLAnalysis.Models
         public string Name { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
+        public string RepositoryName { get; set; } = string.Empty;
     }
 }
