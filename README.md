@@ -26,27 +26,52 @@ https://emerson.stackenterprise.co/articles/4266
 
 ## Configuration
 
-DART uses a single `config.json` file in the DART folder for all configuration settings.
-
-### Basic Configuration
-
 Navigate to the `DART/config.json` file and configure the following core settings:
+
+### Report Configuration
+
 ```json
 {
-  "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
-  "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis", 
-  "LogPath": "C:\\BlackDuck\\Log",
-  "BlackduckToken": "your-blackduck-token-here",
-  "BaseUrl": "https://your-blackduck-url.com",
-  "ProductName": "Your Product Name",
-  "ProductVersion": "1.0",
-  "ProductIteration": "Sprint 1"
-}
+  "ReportConfiguration": {
+    "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
+    "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis",
+    "LogPath": "C:\\BlackDuck",
+    "ProductName": "ProductX",
+    "ProductVersion": "v1.1",
+    "ProductIteration": "PIXX"
+    },
+```
+
+### Black Duck Configuration
+
+```json
+"BlackduckConfiguration": {
+  "BaseUrl": "https://blackduck.emrsn.org",
+  "Token": "your-blackduck-token",
+  "IncludeTransitiveDependency": "true",
+  "ProjectVersionsToInclude": "main",
+  "PreviousResults": "",
+  "CurrentResults": "",
+  "DownloadedReportsFolderName": "Downloaded",
+  "BlackduckRepositories": [
+    {
+      "Name": "ProjectX",
+      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    },
+    {
+      "Name": "ProjectX",
+      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    }
+  ],
+  "DownloadParameters": {
+    "MaxTries": 20,
+    "PollingDelayMilliseconds": 5000
+  }
+},
 ```
 
 ### Feature Toggles
 
-Control which analysis features are enabled:
 ```json
 {
   "FeatureToggles": {
@@ -58,7 +83,6 @@ Control which analysis features are enabled:
 
 ### EOL Analysis Configuration
 
-To enable dependency end-of-life analysis, add the EOLAnalysis section:
 ```json
 {
   "EOLAnalysis": {
