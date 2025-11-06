@@ -1,28 +1,28 @@
-﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace DART.BlackduckAnalysis
 {
     public class BlackduckReportGenerator: IBlackduckReportGenerator
     {
-        private const string KEY_REPORT_FOLDER_PATH = "ReportFolderPath";
-        private const string DL_FOLDER_PATH = "Downloaded";
-
         private readonly IBlackduckReportService blackduckReportService;
         private readonly IFileService fileService;
         private readonly ILogger logger;
 
-        private readonly string ReportFolderPath;
-        private readonly string DestinationPath;
+        private BlackduckConfiguration? RuntimeConfig;
+        private string? ReportFolderPath;
+        private string? DestinationPath;
 
-        public BlackduckReportGenerator(IBlackduckReportService blackduckReportService, IFileService fileService, IConfiguration configuration, ILogger<BlackduckReportGenerator> logger)
+        public BlackduckReportGenerator(IBlackduckReportService blackduckReportService, IFileService fileService, ILogger<BlackduckReportGenerator> logger)
         {
             this.blackduckReportService = blackduckReportService;
             this.fileService = fileService;
             this.logger = logger;
+        }
 
-            ReportFolderPath = configuration.GetSection(KEY_REPORT_FOLDER_PATH).Value;
-            DestinationPath = Path.Combine(ReportFolderPath, DL_FOLDER_PATH);
+        public void SetRuntimeConfig(BlackduckConfiguration config, string reportFolderPath)
+        {
+            RuntimeConfig = config;
+            ReportFolderPath = reportFolderPath;
         }
 
         // This method generates a report by downloading a vulnerability report, extracting it, and transferring the extracted files.
@@ -31,8 +31,12 @@ namespace DART.BlackduckAnalysis
         {
             try
             {
+                if (RuntimeConfig is null || string.IsNullOrEmpty(ReportFolderPath))
+                {
+                    throw new InvalidOperationException("Runtime configuration not set. Call SetRuntimeConfig before GenerateReport.");
+                }
                 // Download the vulnerability report and get the report path
-                var reportPath = await blackduckReportService.DownloadVulnerabilityReport();
+                var reportPath = await blackduckReportService.DownloadVulnerabilityReport(RuntimeConfig, ReportFolderPath!);
 
                 // If the report path is empty, throw an exception.
                 if (string.IsNullOrEmpty(reportPath)) 
@@ -44,6 +48,7 @@ namespace DART.BlackduckAnalysis
                 var extractResult = fileService.ExtractFiles(reportPath);
 
                 // Transfer the extracted files to the destination path.
+                DestinationPath = Path.Combine(ReportFolderPath!, RuntimeConfig.DownloadedReportsFolderName);
                 var transferResult = fileService.TransferFiles(extractResult.DestinationPath, DestinationPath);
 
                 // If the transfer fails, throw an exception.
@@ -69,9 +74,12 @@ namespace DART.BlackduckAnalysis
 
         public Task Cleanup()
         {
-            Directory.GetFiles(DestinationPath, "*.csv", SearchOption.AllDirectories)
-                .ToList().ForEach(File.Delete);
-            Directory.Delete(DestinationPath);
+            if (!string.IsNullOrEmpty(DestinationPath) && Directory.Exists(DestinationPath))
+            {
+                Directory.GetFiles(DestinationPath, "*.csv", SearchOption.AllDirectories)
+                    .ToList().ForEach(File.Delete);
+                Directory.Delete(DestinationPath);
+            }
             return Task.CompletedTask;
         }
 

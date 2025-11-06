@@ -62,7 +62,7 @@ namespace DART.Services.Implementation
                         continue;
                     }
 
-                    var recommendedFix = await _blackduckApiService.GetRecommendedFix(rowDetails.VulnerabilityId);
+                    var recommendedFix = await _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, rowDetails.VulnerabilityId);
 
                     rowDetails.RecommendedFix = recommendedFix;
 
@@ -73,12 +73,12 @@ namespace DART.Services.Implementation
 
         private string[] GetCsvFiles()
         {
-            if (!_config.IncludeTransitiveDependency)
+            if (!_config.BlackduckConfiguration.IncludeTransitiveDependency)
             {
                 _logger.LogInformation("Skipping all Transitive Dependency as configured in config.json.");
             }
 
-            var reportFolderPath = _config.ReportFolderPath;
+            var reportFolderPath = _config.ReportConfiguration.ReportFolderPath;
 
             var csvFiles = Directory.GetFiles(reportFolderPath, "*.csv", SearchOption.AllDirectories);
 
@@ -105,9 +105,9 @@ namespace DART.Services.Implementation
             var matchType = parsedRow[matchTypeIndex];
             var version = parsedRow[versionIndex];
 
-            var versions = _config.ProjectVersionsToInclude.Split(',');
+            var versions = _config.BlackduckConfiguration.ProjectVersionsToInclude.Split(',');
 
-            if (!_config.IncludeTransitiveDependency &&
+            if (!_config.BlackduckConfiguration.IncludeTransitiveDependency &&
                 matchType.Equals("Transitive Dependency", StringComparison.OrdinalIgnoreCase))
             {
                 return null;

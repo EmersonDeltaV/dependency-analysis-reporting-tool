@@ -1,7 +1,7 @@
-﻿namespace DART.BlackduckAnalysis
+namespace DART.BlackduckAnalysis
 {
     public interface IBlackduckReportService
     {
-        Task<string> DownloadVulnerabilityReport();
+        Task<string> DownloadVulnerabilityReport(BlackduckConfiguration config, string reportFolderPath);
     }
 }

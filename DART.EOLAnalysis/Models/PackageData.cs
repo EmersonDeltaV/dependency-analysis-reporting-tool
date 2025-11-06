@@ -3,6 +3,7 @@ namespace DART.EOLAnalysis.Models
     public class PackageData
     {
         public string Id { get; set; } = string.Empty;
+        public string Repository { get; set; } = string.Empty;
         public string Project { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
         public string VersionDate { get; set; } = string.Empty;

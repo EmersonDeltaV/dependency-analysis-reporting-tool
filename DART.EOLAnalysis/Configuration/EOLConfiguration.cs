@@ -2,7 +2,7 @@ using DART.EOLAnalysis.Models;
 
 namespace DART.EOLAnalysis.Configuration
 {
-    public class AppConfiguration
+    public class EOLConfiguration
     {
         public string OutputPath { get; set; } = string.Empty;
         public string Pat { get; set; } = string.Empty;

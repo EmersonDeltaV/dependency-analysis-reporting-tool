@@ -25,7 +25,7 @@ class Program
         builder.Configuration.AddConfiguration(configuration);
 
         // Create log directory and configure Serilog with user's LogPath
-        var logPath = configuration.GetValue<string>("LogPath");
+        var logPath = configuration.GetValue<string>("ReportConfiguration:LogPath");
         if (!string.IsNullOrEmpty(logPath) && !Directory.Exists(logPath))
         {
             Directory.CreateDirectory(logPath);
@@ -52,6 +52,8 @@ class Program
         builder.Logging.AddSerilog(logger);
 
         builder.Services.Configure<Config>(configuration);
+        // Register BlackduckConfiguration separately from the nested Config property
+        builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddSingleton<ICsvService, CsvService>();

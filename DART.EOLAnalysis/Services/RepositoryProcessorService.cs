@@ -75,7 +75,8 @@ namespace DART.EOLAnalysis.Services
                     {
                         Name = projectName,
                         FilePath = gitItem.Path,
-                        Content = csProjContent
+                        Content = csProjContent,
+                        RepositoryName = repository.RepositoryName
                     });
 
                     _logger.LogInformation("Retrieved content for project: {ProjectName}", projectName);
