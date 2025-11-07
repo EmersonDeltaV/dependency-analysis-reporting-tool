@@ -19,6 +19,12 @@ namespace DART
         private readonly ILogger<DartOrchestrator> _logger;
         private readonly Config _config;
 
+        private bool IsBlackduckEnabled => _config.FeatureToggles.EnableBlackduckAnalysis;
+        private bool IsEolEnabledAndConfigured => _config.FeatureToggles.EnableEOLAnalysis && (_config.EOLAnalysis?.Repositories?.Count > 0);
+        private bool HasBothBlackduckResults =>
+            !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) &&
+            !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults);
+
         public DartOrchestrator(IBlackduckReportGenerator blackduckReportGenerator,
                                 IOptions<Config> configOptions,
                                 ICsvService csvService,
@@ -46,11 +52,15 @@ namespace DART
             if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.OutputFilePath))
                 errors.Add("OutputFilePath is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.BaseUrl))
-                errors.Add("BlackduckConfiguration:BaseUrl is required but not configured");
+            // Black Duck settings are required only when the feature is enabled
+            if (IsBlackduckEnabled)
+            {
+                if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.BaseUrl))
+                    errors.Add("BlackduckConfiguration:BaseUrl is required but not configured");
 
-            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.Token))
-                errors.Add("BlackduckConfiguration:Token is required but not configured");
+                if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.Token))
+                    errors.Add("BlackduckConfiguration:Token is required but not configured");
+            }
 
             if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.ProductName))
                 errors.Add("ProductName is required but not configured");
@@ -71,7 +81,14 @@ namespace DART
             {
                 _logger.LogInformation("Starting analysis...");
 
-                if (!string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) && !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+                if (!IsBlackduckEnabled)
+                {
+                    _logger.LogInformation("Black Duck analysis disabled by feature toggle; skipping Black Duck steps.");
+                    await RunEolOnlyFlowAsync(cancellationToken);
+                    return;
+                }
+
+                if (HasBothBlackduckResults)
                 {
                     RunComparisonFlow();
                     return;
@@ -80,8 +97,7 @@ namespace DART
                 await RunInitialReportFlowAsync(cancellationToken);
 
                 // After initial flow, if we now have both previous and current results, run comparison
-                if (!string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) &&
-                    !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+                if (HasBothBlackduckResults)
                 {
                     RunComparisonFlow();
                 }
@@ -109,13 +125,25 @@ namespace DART
 
         private void RunComparisonFlow()
         {
-            _excelService.CompareExcelFiles(_config.BlackduckConfiguration.CurrentResults, _config.BlackduckConfiguration.PreviousResults, _config.ReportConfiguration.OutputFilePath);
+            _excelService.CompareExcelFiles(
+                _config.BlackduckConfiguration.CurrentResults,
+                _config.BlackduckConfiguration.PreviousResults,
+                _config.ReportConfiguration.OutputFilePath);
+        }
+
+        private async Task RunEolOnlyFlowAsync(CancellationToken cancellationToken)
+        {
+            if (!IsEolEnabledAndConfigured)
+                return;
+
+            var workbook = _excelService.GetWorkbook();
+            await RunEolAnalysisAsync(workbook, cancellationToken);
+            _excelService.SaveWorkbook(workbook);
         }
 
         private async Task RunEolAnalysisAsync(IXLWorkbook workbook, CancellationToken cancellationToken)
         {
-            if (_config.FeatureToggles.EnableEOLAnalysis &&
-                _config.EOLAnalysis?.Repositories?.Count > 0)
+            if (IsEolEnabledAndConfigured)
             {
                 try
                 {
@@ -179,37 +207,40 @@ namespace DART
 
             await _blackduckReportGenerator.Cleanup();
 
-            // If CurrentResults is empty, set it to the latest generated Black Duck summary report
-            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
-            {
-                try
-                {
-                    var outputDir = _config.ReportConfiguration.OutputFilePath;
-                    if (!string.IsNullOrWhiteSpace(outputDir) && Directory.Exists(outputDir))
-                    {
-                        var latestSummary = Directory
-                            .GetFiles(outputDir, "blackduck-summary-*.xlsx")
-                            .Select(f => new FileInfo(f))
-                            .OrderByDescending(f => f.LastWriteTimeUtc)
-                            .FirstOrDefault();
-
-                        if (latestSummary != null)
-                        {
-                            _config.BlackduckConfiguration.CurrentResults = latestSummary.FullName;
-                            _logger.LogInformation("CurrentResults not provided; using generated summary at {FilePath}.", latestSummary.FullName);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("CurrentResults not provided and no generated summary found in {OutputDir}.", outputDir);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to set CurrentResults from generated output.");
-                }
-            }
+            SetCurrentResultsFromOutputDirectoryIfMissing();
         }
 
+        private void SetCurrentResultsFromOutputDirectoryIfMissing()
+        {
+            if (!string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+                return;
+
+            try
+            {
+                var outputDir = _config.ReportConfiguration.OutputFilePath;
+                if (string.IsNullOrWhiteSpace(outputDir) || !Directory.Exists(outputDir))
+                    return;
+
+                var latestSummary = Directory
+                    .GetFiles(outputDir, "dart-summary-*.xlsx")
+                    .Select(f => new FileInfo(f))
+                    .OrderByDescending(f => f.LastWriteTimeUtc)
+                    .FirstOrDefault();
+
+                if (latestSummary != null)
+                {
+                    _config.BlackduckConfiguration.CurrentResults = latestSummary.FullName;
+                    _logger.LogInformation("CurrentResults not provided; using generated summary at {FilePath}.", latestSummary.FullName);
+                }
+                else
+                {
+                    _logger.LogWarning("CurrentResults not provided and no generated summary found in {OutputDir}.", outputDir);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to set CurrentResults from generated output.");
+            }
+        }
     }
 }

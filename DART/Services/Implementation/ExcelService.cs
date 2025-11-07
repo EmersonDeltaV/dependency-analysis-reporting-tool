@@ -130,7 +130,7 @@ namespace DART.Services.Implementation
         public void SaveReport()
         {
             worksheet.Columns().AdjustToContents();
-            xLWorkbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            xLWorkbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"dart-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Blackduck Analysis is completed and report was generated successfully.");
             xLWorkbook.Dispose();
         }
@@ -151,7 +151,7 @@ namespace DART.Services.Implementation
         /// <param name="workbook">The workbook to save.</param>
         public void SaveWorkbook(IXLWorkbook workbook)
         {
-            workbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            workbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"dart-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Analysis is completed and report was generated successfully.");
             workbook.Dispose();
         }

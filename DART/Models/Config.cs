@@ -21,6 +21,7 @@ namespace DART.Models
     }
     public class FeatureToggles
     {
-        public bool EnableEOLAnalysis { get; set; }
+        public bool EnableBlackduckAnalysis { get; set; } = true;
+        public bool EnableEOLAnalysis { get; set; } = true;
     }
 }

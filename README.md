@@ -33,7 +33,6 @@ Navigate to the `DART/config.json` file and configure the following core setting
 ```json
 {
   "ReportConfiguration": {
-    "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
     "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis",
     "LogPath": "C:\\BlackDuck",
     "ProductName": "ProductX",
@@ -52,7 +51,6 @@ Navigate to the `DART/config.json` file and configure the following core setting
   "ProjectVersionsToInclude": "main",
   "PreviousResults": "",
   "CurrentResults": "",
-  "DownloadedReportsFolderName": "Downloaded",
   "BlackduckRepositories": [
     {
       "Name": "ProjectX",
@@ -75,11 +73,20 @@ Navigate to the `DART/config.json` file and configure the following core setting
 ```json
 {
   "FeatureToggles": {
-    "EnableDownloadTool": true,
-    "EnableEOLAnalysis": true
+    "EnableEOLAnalysis": true,
+    "EnableBlackduckAnalysis": true
   }
 }
 ```
+
+- EnableBlackduckAnalysis: When true, runs all Black Duck download, processing, and comparison steps. When false, Black Duck steps are skipped. Defaults to true. Black Duck configuration is only required when this is true.
+- EnableEOLAnalysis: When true, adds an EOL analysis sheet. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
+
+### Run Modes
+
+- Black Duck only: `EnableBlackduckAnalysis = true`, `EnableEOLAnalysis = false`
+- EOL only: `EnableBlackduckAnalysis = false`, `EnableEOLAnalysis = true`
+- Both: `EnableBlackduckAnalysis = true`, `EnableEOLAnalysis = true`
 
 ### EOL Analysis Configuration
 
@@ -115,7 +122,6 @@ Navigate to the `DART/config.json` file and configure the following core setting
 - Check network connectivity to BlackDuck and Azure DevOps services
 - Review log files in the configured `LogPath` directory
 **Empty Results**:
-- Verify `ReportFolderPath` contains CSV files for BlackDuck analysis
 - Ensure Azure DevOps repositories are accessible and contain supported project files
 - Check that feature toggles are correctly configured
 

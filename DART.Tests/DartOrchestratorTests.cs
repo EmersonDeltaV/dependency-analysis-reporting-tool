@@ -108,6 +108,38 @@ namespace DART.Tests
         }
 
         [Fact]
+        public async Task StartAsync_ShouldRunOnlyEOL_WhenBlackduckDisabledAndEOLEnabled()
+        {
+            // Arrange
+            var config = CreateDefaultConfig();
+            config.FeatureToggles.EnableBlackduckAnalysis = false;
+            config.FeatureToggles.EnableEOLAnalysis = true;
+            config.EOLAnalysis.Repositories = new List<Repository>
+            {
+                new Repository { Name = "Repo1", Url = "https://dev.azure.com/Org/Proj/_git/Repo1", Branch = "main" }
+            };
+
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>())
+                .Returns(new List<PackageData>());
+
+            var program = CreateProgram(config);
+
+            // Act
+            await program.StartAsync(CancellationToken.None);
+
+            // Assert - Only EOL path interactions
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            await _mockCsvService.DidNotReceive().AnalyzeReport();
+
+            _mockExcelService.Received(1).GetWorkbook();
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>());
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
+        }
+
+        [Fact]
         public async Task StartAsync_ShouldCallGenerateReportAnalyzeReportAndCleanup_WhenNoPreviousResultsAndDownloadToolEnabled()
         {
             // Arrange
