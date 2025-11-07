@@ -217,11 +217,9 @@ namespace DART.Services.Implementation
         {
             using (var workbook1 = new XLWorkbook(filePath1))
             using (var workbook2 = new XLWorkbook(filePath2))
-            using (var outputWorkbook = new XLWorkbook())
             {
-                var worksheet1 = workbook1.Worksheet(1);
-                var worksheet2 = workbook2.Worksheet(1);
-                var outputWorksheet = outputWorkbook.Worksheets.Add("Comparison");
+                var worksheet1 = workbook1.Worksheet(1); // Current summary
+                var worksheet2 = workbook2.Worksheet(1); // Previous summary
 
                 int startRow = 8;
                 int endMatchColumn = 5; // Column E
@@ -259,29 +257,17 @@ namespace DART.Services.Implementation
                         }
                     }
 
-                    for (int col = 1; col <= endColumn; col++)
-                    {
-                        var cell1 = worksheet1.Cell(row1, col);
-                        var outputCell = outputWorksheet.Cell(row1, col);
-                        outputCell.Value = cell1.Value;
+                    // Set Yes/No flag for column G (7) to drive conditional formatting
+                    worksheet1.Cell(row1, 7).Value = (matchingRow2 != -1) ? "Yes" : "No";
 
-                        if (matchingRow2 != -1)
-                        {
-                            outputCell.Style.Fill.BackgroundColor = XLColor.LightBlue;
-                        }
-                        else
-                        {
-                            outputCell.Style.Fill.BackgroundColor = XLColor.LightPink;
-                        }
-                    }
-
+                    // If matched, carry over columns I..L (9..12) from previous to preserve review metadata
                     if (matchingRow2 != -1)
                     {
-                        for (int col = 9; col <= 12; col++) // Columns I to L
+                        for (int col = 9; col <= 12; col++)
                         {
-                            var cell2 = worksheet2.Cell(matchingRow2, col);
-                            var outputCell = outputWorksheet.Cell(row1, col);
-                            outputCell.Value = cell2.Value;
+                            var prevCell = worksheet2.Cell(matchingRow2, col);
+                            var curCell = worksheet1.Cell(row1, col);
+                            curCell.Value = prevCell.Value;
                         }
                     }
                     else
@@ -290,9 +276,25 @@ namespace DART.Services.Implementation
                     }
                 }
 
-                FormatHeader(outputWorksheet);
-                outputWorksheet.Columns().AdjustToContents();
-            outputWorkbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"blackduck-diff-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+                // Add conditional formatting rules to the current worksheet based on column G
+                var lastRow = worksheet1.LastRowUsed().RowNumber();
+                if (lastRow >= startRow)
+                {
+                    var dataRange = worksheet1.Range(startRow, 1, lastRow, endColumn);
+
+                    var existingRule = dataRange.AddConditionalFormat()
+                        .WhenIsTrue("=$G8=\"Yes\"");
+                    existingRule.Fill.SetBackgroundColor(XLColor.LightBlue);
+
+                    var newRule = dataRange.AddConditionalFormat()
+                        .WhenIsTrue("=$G8=\"No\"");
+                    newRule.Fill.SetBackgroundColor(XLColor.LightPink);
+                }
+
+                worksheet1.Columns().AdjustToContents();
+
+                // Overwrite the current summary file with the updated formatting and preserved values
+                workbook1.Save();
             }
         }
     }

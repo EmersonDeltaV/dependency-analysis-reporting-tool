@@ -81,6 +81,13 @@ namespace DART
                 }
 
                 await RunInitialReportFlowAsync(cancellationToken);
+
+                // After initial flow, if we now have both previous and current results, run comparison
+                if (!string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) &&
+                    !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+                {
+                    RunComparisonFlow();
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -183,6 +190,37 @@ namespace DART
             if (_config.FeatureToggles.EnableDownloadTool)
             {
                 await _blackduckReportGenerator.Cleanup();
+            }
+
+            // If CurrentResults is empty, set it to the latest generated Black Duck summary report
+            if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+            {
+                try
+                {
+                    var outputDir = _config.ReportConfiguration.OutputFilePath;
+                    if (!string.IsNullOrWhiteSpace(outputDir) && Directory.Exists(outputDir))
+                    {
+                        var latestSummary = Directory
+                            .GetFiles(outputDir, "blackduck-summary-*.xlsx")
+                            .Select(f => new FileInfo(f))
+                            .OrderByDescending(f => f.LastWriteTimeUtc)
+                            .FirstOrDefault();
+
+                        if (latestSummary != null)
+                        {
+                            _config.BlackduckConfiguration.CurrentResults = latestSummary.FullName;
+                            _logger.LogInformation("CurrentResults not provided; using generated summary at {FilePath}.", latestSummary.FullName);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("CurrentResults not provided and no generated summary found in {OutputDir}.", outputDir);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to set CurrentResults from generated output.");
+                }
             }
         }
 
