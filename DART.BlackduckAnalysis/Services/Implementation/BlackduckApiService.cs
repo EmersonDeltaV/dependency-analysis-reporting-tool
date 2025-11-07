@@ -210,7 +210,7 @@ namespace DART.BlackduckAnalysis
                 return string.Empty;
             }
 
-            var folderPath = Path.Combine(reportFolderPath, config.DownloadedReportsFolderName);
+            var folderPath = reportFolderPath;
 
             if (!Directory.Exists(folderPath))
             {

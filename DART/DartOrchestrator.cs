@@ -43,9 +43,6 @@ namespace DART
         {
             var errors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.ReportFolderPath))
-                errors.Add("ReportFolderPath is required but not configured");
-
             if (string.IsNullOrWhiteSpace(_config.ReportConfiguration.OutputFilePath))
                 errors.Add("OutputFilePath is required but not configured");
 
@@ -148,11 +145,8 @@ namespace DART
 
             try
             {
-                if (_config.FeatureToggles.EnableDownloadTool)
-                {
-                    _blackduckReportGenerator.SetRuntimeConfig(_config.BlackduckConfiguration, _config.ReportConfiguration.ReportFolderPath);
-                    await _blackduckReportGenerator.GenerateReport();
-                }
+                _blackduckReportGenerator.SetRuntimeConfig(_config.BlackduckConfiguration, _config.ReportConfiguration.OutputFilePath);
+                await _blackduckReportGenerator.GenerateReport();
 
                 _logger.LogInformation("No previous results found. Skipping comparison.");
 
@@ -172,11 +166,7 @@ namespace DART
                     _excelService.SaveWorkbook(workbook);
                 }
 
-                // Always cleanup if download tool was enabled
-                if (_config.FeatureToggles.EnableDownloadTool)
-                {
-                    await _blackduckReportGenerator.Cleanup();
-                }
+                await _blackduckReportGenerator.Cleanup();
 
                 throw;
             }
@@ -187,10 +177,7 @@ namespace DART
                 _excelService.SaveWorkbook(workbook);
             }
 
-            if (_config.FeatureToggles.EnableDownloadTool)
-            {
-                await _blackduckReportGenerator.Cleanup();
-            }
+            await _blackduckReportGenerator.Cleanup();
 
             // If CurrentResults is empty, set it to the latest generated Black Duck summary report
             if (string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))

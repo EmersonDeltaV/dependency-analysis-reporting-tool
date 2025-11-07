@@ -78,7 +78,13 @@ namespace DART.Services.Implementation
                 _logger.LogInformation("Skipping all Transitive Dependency as configured in config.json.");
             }
 
-            var reportFolderPath = _config.ReportConfiguration.ReportFolderPath;
+            var reportFolderPath = Path.Combine(_config.ReportConfiguration.OutputFilePath, BlackduckConfiguration.DownloadsFolderName);
+
+            if (!Directory.Exists(reportFolderPath))
+            {
+                _logger.LogInformation($"Report folder '{reportFolderPath}' does not exist yet. No CSV files to process.");
+                return Array.Empty<string>();
+            }
 
             var csvFiles = Directory.GetFiles(reportFolderPath, "*.csv", SearchOption.AllDirectories);
 

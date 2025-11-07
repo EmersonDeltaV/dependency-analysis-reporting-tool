@@ -1,7 +1,6 @@
 {
   "ReportConfiguration": {
-    "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
-    "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis",
+    "OutputFilePath": "C:\\BlackDuck",
     "LogPath": "C:\\BlackDuck",
     "ProductName": "ProductName",
     "ProductVersion": "v1.0",
@@ -14,7 +13,6 @@
     "ProjectVersionsToInclude": "main",
     "PreviousResults": "",
     "CurrentResults": "",
-    "DownloadedReportsFolderName": "Downloaded",
     "BlackduckRepositories": [
       {
         "Name": "Project_Name1",
@@ -58,7 +56,6 @@
     }
   },
   "FeatureToggles": {
-    "EnableDownloadTool": true,
     "EnableEOLAnalysis": true
   }
 }
