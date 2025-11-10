@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
-namespace DART.Tests
+namespace DART.Tests.DART.Orchestrator
 {
     public class DartOrchestratorTests : IDisposable
     {
