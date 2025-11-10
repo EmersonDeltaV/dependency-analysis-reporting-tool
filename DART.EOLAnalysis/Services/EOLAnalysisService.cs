@@ -59,7 +59,10 @@ namespace DART.EOLAnalysis
                             {
                                 try
                                 {
-                                    var packageDataList = await _projectAnalysis.AnalyzeProjectAsync(projectInfo, config.PackageRecommendation, cancellationToken);
+                                    var packageDataList = await _projectAnalysis.AnalyzeProjectAsync(
+                                        projectInfo,
+                                        config.PackageRecommendation,
+                                        cancellationToken);
 
                                     // Step 3: Add package data to results
                                     results.AddRange(packageDataList);

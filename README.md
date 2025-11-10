@@ -94,16 +94,34 @@ Navigate to the `DART/config.json` file and configure the following core setting
 {
   "EOLAnalysis": {
     "Pat": "your-azure-devops-pat-token",
+    "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
       {
         "Name": "ProjectName",
         "Url": "https://dev.azure.com/org/project/_git/repository",
         "Branch": "main"
       }
-    ]
+    ],
+    "PackageRecommendation": {
+      "OldPackageThresholdYears": 3.0,
+      "NearEolThresholdYears": 2.0,
+      "SkipInternalPackagesFilter": [
+        "Emerson.*"
+      ],
+      "Messages": {
+        "OldPackageDefault": "Package is over 3 yrs old; investigate or replace/remove.",
+        "UpdateToNewer": "Update to newer version",
+        "NearEolUpdate": "Near EOL consider updating to newer version",
+        "NoAction": "N/A",
+        "ToBeDecided": "TBD",
+        "SkipInternal": "Skip. Internal package"
+      }
+    }
   }
 }
 ```
+
+- SkipInternalPackagesFilter: Optional wildcard patterns (supports `*` and `?`) used to mark packages by Id as internal/skipped. Matching packages remain in results with the Recommended Action set to `Messages.SkipInternal`.
 
 ## Troubleshooting
 
@@ -135,3 +153,4 @@ DART uses Serilog for comprehensive logging:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+

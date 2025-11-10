@@ -20,7 +20,10 @@ namespace DART.EOLAnalysis.Services
             _packageRecommendation = packageRecommendation;
         }
 
-        public async Task<List<PackageData>> AnalyzeProjectAsync(ProjectInfo projectInfo, PackageRecommendationConfig recommendationConfig, CancellationToken cancellationToken = default)
+        public async Task<List<PackageData>> AnalyzeProjectAsync(
+            ProjectInfo projectInfo,
+            PackageRecommendationConfig recommendationConfig,
+            CancellationToken cancellationToken = default)
         {
             var packageDataList = new List<PackageData>();
 
@@ -51,6 +54,12 @@ namespace DART.EOLAnalysis.Services
                     return packageDataList; // Return empty list
                 }
 
+                // Normalize skip patterns once from recommendation config
+                var skipPatterns = (recommendationConfig?.SkipInternalPackagesFilter ?? new List<string>())
+                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                    .Select(p => p.Trim())
+                    .ToList();
+
                 foreach (var packageReference in packageReferences)
                 {
                     var id = packageReference.Attribute("Include")?.Value;
@@ -65,6 +74,14 @@ namespace DART.EOLAnalysis.Services
                             Project = projectInfo.Name,
                             Version = version
                         };
+
+                        if (ShouldSkip(id, skipPatterns))
+                        {
+                            packageData.Action = recommendationConfig!.Messages.SkipInternal;
+                            packageDataList.Add(packageData);
+                            _logger.LogInformation("Package {PackageId} in project {ProjectName} marked as '{Action}' due to SkipInternalPackagesFilter", id, projectInfo.Name, packageData.Action);
+                            continue;
+                        }
 
                         try
                         {
@@ -108,6 +125,35 @@ namespace DART.EOLAnalysis.Services
             }
 
             return packageDataList;
+        }
+
+        private static bool ShouldSkip(string packageId, IReadOnlyCollection<string> skipPatterns)
+        {
+            if (skipPatterns == null || skipPatterns.Count == 0)
+                return false;
+
+            foreach (var pattern in skipPatterns)
+            {
+                if (IsWildcardMatch(packageId, pattern))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool IsWildcardMatch(string input, string pattern)
+        {
+            if (string.IsNullOrEmpty(pattern))
+                return false;
+
+            // Escape regex special chars, then replace wildcard tokens
+            string regexPattern = System.Text.RegularExpressions.Regex.Escape(pattern)
+                .Replace("\\*", ".*")
+                .Replace("\\?", ".");
+
+            // Anchor to start and end for full match
+            regexPattern = "^" + regexPattern + "$";
+
+            return System.Text.RegularExpressions.Regex.IsMatch(input, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
     }
 }

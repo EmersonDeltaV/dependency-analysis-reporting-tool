@@ -16,6 +16,11 @@ namespace DART.EOLAnalysis.Models
         /// Action messages for different scenarios
         /// </summary>
         public PackageActionMessages Messages { get; set; } = new PackageActionMessages();
+
+        /// <summary>
+        /// Wildcard patterns of package Ids to mark as skipped/internal (e.g., "Emerson.*").
+        /// </summary>
+        public List<string> SkipInternalPackagesFilter { get; set; } = new List<string>();
     }
 
     public class PackageActionMessages
@@ -44,5 +49,10 @@ namespace DART.EOLAnalysis.Models
         /// Message when decision cannot be determined
         /// </summary>
         public string ToBeDecided { get; set; } = "TBD";
+
+        /// <summary>
+        /// Message used when a package matches SkipInternalPackagesFilter
+        /// </summary>
+        public string SkipInternal { get; set; } = "Skip. Internal package";
     }
 }
