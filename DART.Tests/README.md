@@ -7,10 +7,10 @@ Test organization
 Naming
 
 - Place tests under the matching folder tree.
-- Name files as `*.Tests.cs` and methods as `MethodName_Should_When`.
+- Name files as `*Tests.cs` and methods as `MethodName_Should_When`.
 
 Examples
 
-- DART/Orchestrator/DartOrchestrator.Tests.cs
-- DART.BlackduckAnalysis/Services/Implementation/BlackduckReportService.Tests.cs
-- DART.EOLAnalysis/Services/NugetMetadataService.Tests.cs
+- DART/Orchestrator/DartOrchestratorTests.cs
+- DART.BlackduckAnalysis/Services/Implementation/BlackduckReportServiceTests.cs
+- DART.EOLAnalysis/Services/NugetMetadataServiceTests.cs

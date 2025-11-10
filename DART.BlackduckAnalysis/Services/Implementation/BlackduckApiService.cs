@@ -92,10 +92,9 @@ namespace DART.BlackduckAnalysis
             var jsonContent = JObject.Parse(content);
             var recommendedFix = jsonContent["solution"]?.ToString() ?? string.Empty;
 
-            recommendedFix = Regex.Replace(recommendedFix, @"[\*\[\]\n]", "").Trim();
-            recommendedFix = Regex.Replace(recommendedFix, @"\([^)]+\)", "").Trim();
-
-            return recommendedFix;
+            // Normalize and format the recommended fix text for report output
+            var recommendedFixFormatted = RecommendedFixFormatter.Format(recommendedFix);
+            return recommendedFixFormatted;
         }
 
         public async Task<bool> CreateVulnerabilityStatusReport(BlackduckConfiguration config)
