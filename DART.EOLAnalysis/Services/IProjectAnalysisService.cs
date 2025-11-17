@@ -12,8 +12,12 @@ namespace DART.EOLAnalysis.Services
         /// </summary>
         /// <param name="projectInfo">Information about the project file to analyze.</param>
         /// <param name="recommendationConfig">Configuration for package recommendation logic.</param>
+        /// <param name="skipPackagesFilter">Optional wildcard patterns to skip packages by Id (e.g., "Emerson.*").</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>A list of package data with metadata and recommendations.</returns>
-        Task<List<PackageData>> AnalyzeProjectAsync(ProjectInfo projectInfo, PackageRecommendationConfig recommendationConfig, CancellationToken cancellationToken = default);
+        Task<List<PackageData>> AnalyzeProjectAsync(
+            ProjectInfo projectInfo,
+            PackageRecommendationConfig recommendationConfig,
+            CancellationToken cancellationToken = default);
     }
 }

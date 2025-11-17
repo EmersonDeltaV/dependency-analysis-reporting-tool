@@ -6,6 +6,11 @@ namespace DART.BlackduckAnalysis
     public class BlackduckConfiguration
     {
         /// <summary>
+        /// Default subfolder under OutputFilePath where Black Duck ZIP and CSVs are stored.
+        /// Not configurable via config.json.
+        /// </summary>
+        public const string DownloadsFolderName = "Downloads";
+        /// <summary>
         /// BlackDuck API base URL
         /// </summary>
         public string BaseUrl { get; set; } = string.Empty;
@@ -35,10 +40,7 @@ namespace DART.BlackduckAnalysis
         /// </summary>
         public string CurrentResults { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Subfolder name for downloaded reports (relative to ReportFolderPath)
-        /// </summary>
-        public string DownloadedReportsFolderName { get; set; } = "Downloaded";
+        
 
         /// <summary>
         /// BlackDuck repositories/projects to include in vulnerability reports

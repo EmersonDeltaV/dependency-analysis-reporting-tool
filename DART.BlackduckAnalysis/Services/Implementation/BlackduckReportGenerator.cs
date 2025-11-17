@@ -35,8 +35,11 @@ namespace DART.BlackduckAnalysis
                 {
                     throw new InvalidOperationException("Runtime configuration not set. Call SetRuntimeConfig before GenerateReport.");
                 }
+                // Compute downloads directory under the configured output path
+                var downloadsDir = Path.Combine(ReportFolderPath!, BlackduckConfiguration.DownloadsFolderName);
+
                 // Download the vulnerability report and get the report path
-                var reportPath = await blackduckReportService.DownloadVulnerabilityReport(RuntimeConfig, ReportFolderPath!);
+                var reportPath = await blackduckReportService.DownloadVulnerabilityReport(RuntimeConfig, downloadsDir);
 
                 // If the report path is empty, throw an exception.
                 if (string.IsNullOrEmpty(reportPath)) 
@@ -48,7 +51,7 @@ namespace DART.BlackduckAnalysis
                 var extractResult = fileService.ExtractFiles(reportPath);
 
                 // Transfer the extracted files to the destination path.
-                DestinationPath = Path.Combine(ReportFolderPath!, RuntimeConfig.DownloadedReportsFolderName);
+                DestinationPath = downloadsDir;
                 var transferResult = fileService.TransferFiles(extractResult.DestinationPath, DestinationPath);
 
                 // If the transfer fails, throw an exception.
@@ -76,9 +79,7 @@ namespace DART.BlackduckAnalysis
         {
             if (!string.IsNullOrEmpty(DestinationPath) && Directory.Exists(DestinationPath))
             {
-                Directory.GetFiles(DestinationPath, "*.csv", SearchOption.AllDirectories)
-                    .ToList().ForEach(File.Delete);
-                Directory.Delete(DestinationPath);
+                Directory.Delete(DestinationPath, recursive: true);
             }
             return Task.CompletedTask;
         }

@@ -13,7 +13,6 @@ namespace DART.Models
 
     public class ReportConfiguration
     {
-        public string ReportFolderPath { get; set; } = string.Empty;
         public string OutputFilePath { get; set; } = string.Empty;
         public string LogPath { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
@@ -22,7 +21,7 @@ namespace DART.Models
     }
     public class FeatureToggles
     {
-        public bool EnableDownloadTool { get; set; }
-        public bool EnableEOLAnalysis { get; set; }
+        public bool EnableBlackduckAnalysis { get; set; } = true;
+        public bool EnableEOLAnalysis { get; set; } = true;
     }
 }

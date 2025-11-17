@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 
-namespace DART.Tests
+namespace DART.Tests.DART.Orchestrator
 {
     public class DartOrchestratorTests : IDisposable
     {
@@ -46,7 +46,6 @@ namespace DART.Tests
             {
                 ReportConfiguration = new ReportConfiguration
                 {
-                    ReportFolderPath = "C:\\Reports",
                     OutputFilePath = "C:\\Output",
                     LogPath = "C:\\Logs",
                     ProductName = "TestProduct",
@@ -62,7 +61,6 @@ namespace DART.Tests
                 },
                 FeatureToggles = new FeatureToggles
                 {
-                    EnableDownloadTool = false,
                     EnableEOLAnalysis = false
                 },
                 EOLAnalysis = new EOLAnalysisConfig()
@@ -73,7 +71,6 @@ namespace DART.Tests
             string previousResults = "", string currentResults = "", int repositoryCount = 0)
         {
             var config = CreateDefaultConfig();
-            config.FeatureToggles.EnableDownloadTool = enableDownloadTool;
             config.FeatureToggles.EnableEOLAnalysis = enableEOLAnalysis;
             config.BlackduckConfiguration.PreviousResults = previousResults;
             config.BlackduckConfiguration.CurrentResults = currentResults;
@@ -108,6 +105,38 @@ namespace DART.Tests
                 _mockExcelService,
                 _mockEOLAnalysisService,
                 _mockLogger);
+        }
+
+        [Fact]
+        public async Task StartAsync_ShouldRunOnlyEOL_WhenBlackduckDisabledAndEOLEnabled()
+        {
+            // Arrange
+            var config = CreateDefaultConfig();
+            config.FeatureToggles.EnableBlackduckAnalysis = false;
+            config.FeatureToggles.EnableEOLAnalysis = true;
+            config.EOLAnalysis.Repositories = new List<Repository>
+            {
+                new Repository { Name = "Repo1", Url = "https://dev.azure.com/Org/Proj/_git/Repo1", Branch = "main" }
+            };
+
+            var mockWorkbook = Substitute.For<IXLWorkbook>();
+            _mockExcelService.GetWorkbook().Returns(mockWorkbook);
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>())
+                .Returns(new List<PackageData>());
+
+            var program = CreateProgram(config);
+
+            // Act
+            await program.StartAsync(CancellationToken.None);
+
+            // Assert - Only EOL path interactions
+            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            await _mockCsvService.DidNotReceive().AnalyzeReport();
+
+            _mockExcelService.Received(1).GetWorkbook();
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>());
+            _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
         }
 
         [Fact]
@@ -225,7 +254,7 @@ namespace DART.Tests
         }
 
         [Fact]
-        public async Task StartAsync_ShouldNotCallGenerateReportOrCleanup_WhenDownloadToolDisabled()
+        public async Task StartAsync_ShouldCallGenerateReportAndCleanup_ByDefault()
         {
             // Arrange
             var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: false);
@@ -239,9 +268,9 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // 1.4.1 GenerateReport() and Cleanup() are NOT called
-            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            // 1.4.1 GenerateReport() and Cleanup() are called by default
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // 1.4.2 Other calls as above still happen
             await _mockCsvService.Received(1).AnalyzeReport();
@@ -253,7 +282,7 @@ namespace DART.Tests
         }
 
         [Fact]
-        public async Task StartAsync_ShouldNotCallGenerateReportOrCleanup_WhenDownloadToolDisabledWithEOLAnalysis()
+        public async Task StartAsync_ShouldCallGenerateReportAndCleanup_WithEOLAnalysis()
         {
             // Arrange
             var eolData = new List<PackageData>
@@ -274,9 +303,9 @@ namespace DART.Tests
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // 1.4.1 GenerateReport() and Cleanup() are NOT called
-            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            // 1.4.1 GenerateReport() and Cleanup() are called by default
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // 1.4.2 Other calls as above still happen including EOL analysis
             await _mockCsvService.Received(1).AnalyzeReport();
@@ -385,11 +414,11 @@ namespace DART.Tests
             // 1.6.2 Workbook still saved
             _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
 
-            // 1.6.3 Cleanup behavior matches current code (download tool disabled so no generate/cleanup)
-            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
+            // 1.6.3 Download still runs and cleanup occurs
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
             await _mockCsvService.Received(1).AnalyzeReport();
             _mockExcelService.Received(1).GetWorkbook();
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // EOL analysis should have been attempted
             await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
@@ -619,8 +648,8 @@ namespace DART.Tests
             // Workbook should NOT be saved since it was never created
             _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
 
-            // Cleanup should NOT be called when download tool is disabled
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            // Cleanup should be called even when an exception occurs
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // Exception should be logged
             _mockLogger.ReceivedWithAnyArgs().Log<object>(LogLevel.Error, default, default!, default!, default!);
@@ -635,7 +664,6 @@ namespace DART.Tests
                 // Missing required fields
                 ReportConfiguration = new ReportConfiguration
                 {
-                    ReportFolderPath = "",
                     OutputFilePath = "",
                     ProductName = "",
                     ProductVersion = ""
@@ -658,10 +686,10 @@ namespace DART.Tests
                 _mockLogger));
 
             Assert.Contains("Configuration validation failed", exception.Message);
-            Assert.Contains("ReportFolderPath is required", exception.Message);
+            
             Assert.Contains("OutputFilePath is required", exception.Message);
             Assert.Contains("BaseUrl is required", exception.Message);
-            Assert.Contains("BlackduckToken is required", exception.Message);
+            Assert.Contains("BlackduckConfiguration:Token is required", exception.Message);
             Assert.Contains("ProductName is required", exception.Message);
             Assert.Contains("ProductVersion is required", exception.Message);
         }
@@ -837,19 +865,17 @@ namespace DART.Tests
             // Act
             await program.StartAsync(cancellationToken);
 
-            // Assert - Verify correct call order (no GenerateReport/Cleanup, but EOL analysis)
+            // Assert - Verify correct call order including download and EOL analysis
             Received.InOrder(() =>
             {
+                _mockBlackduckReportGenerator.GenerateReport();
                 _mockCsvService.AnalyzeReport();
                 _mockExcelService.GetWorkbook();
                 _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
                 _mockExcelService.AddEOLAnalysisSheet(mockWorkbook, eolData);
                 _mockExcelService.SaveWorkbook(mockWorkbook);
+                _mockBlackduckReportGenerator.Cleanup();
             });
-
-            // Verify GenerateReport and Cleanup are NOT called
-            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
         }
 
         [Fact]
@@ -992,9 +1018,9 @@ namespace DART.Tests
             // Act
             await program.StartAsync(cancellationToken);
 
-            // Assert - Verify download-related methods are NOT called
-            await _mockBlackduckReportGenerator.DidNotReceive().GenerateReport();
-            await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
+            // Assert - Verify download-related methods are called by default
+            await _mockBlackduckReportGenerator.Received(1).GenerateReport();
+            await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // Verify other methods are called normally
             await _mockCsvService.Received(1).AnalyzeReport();

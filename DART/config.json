@@ -1,7 +1,6 @@
 {
   "ReportConfiguration": {
-    "ReportFolderPath": "C:\\BlackDuck\\Tool\\Reports",
-    "OutputFilePath": "C:\\BlackDuck\\Tool\\Analysis",
+    "OutputFilePath": "C:\\BlackDuck",
     "LogPath": "C:\\BlackDuck",
     "ProductName": "ProductName",
     "ProductVersion": "v1.0",
@@ -14,7 +13,6 @@
     "ProjectVersionsToInclude": "main",
     "PreviousResults": "",
     "CurrentResults": "",
-    "DownloadedReportsFolderName": "Downloaded",
     "BlackduckRepositories": [
       {
         "Name": "Project_Name1",
@@ -48,17 +46,21 @@
     "PackageRecommendation": {
       "OldPackageThresholdYears": 3.0,
       "NearEolThresholdYears": 2.0,
+      "SkipInternalPackagesFilter": [
+        "Emerson.*"
+      ],
       "Messages": {
         "OldPackageDefault": "Package is over 3 yrs old; investigate or replace/remove.",
         "UpdateToNewer": "Update to newer version",
         "NearEolUpdate": "Near EOL consider updating to newer version",
         "NoAction": "N/A",
-        "ToBeDecided": "TBD"
+        "ToBeDecided": "TBD",
+        "SkipInternal": "Skip. Internal package"
       }
     }
   },
   "FeatureToggles": {
-    "EnableDownloadTool": true,
+    "EnableBlackduckAnalysis": true,
     "EnableEOLAnalysis": true
   }
 }

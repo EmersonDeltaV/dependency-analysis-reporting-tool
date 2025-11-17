@@ -1,3 +1,4 @@
+using DART.BlackduckAnalysis.Helpers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -92,10 +93,9 @@ namespace DART.BlackduckAnalysis
             var jsonContent = JObject.Parse(content);
             var recommendedFix = jsonContent["solution"]?.ToString() ?? string.Empty;
 
-            recommendedFix = Regex.Replace(recommendedFix, @"[\*\[\]\n]", "").Trim();
-            recommendedFix = Regex.Replace(recommendedFix, @"\([^)]+\)", "").Trim();
-
-            return recommendedFix;
+            // Normalize and format the recommended fix text for report output
+            var recommendedFixFormatted = RecommendedFixFormatter.Format(recommendedFix);
+            return recommendedFixFormatted;
         }
 
         public async Task<bool> CreateVulnerabilityStatusReport(BlackduckConfiguration config)
@@ -140,7 +140,10 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
 
-            using var response = await httpClient.GetAsync("/api/v1/vulnerability-reports?ascending=false&limit=100&offset=0&sortField=finishedAt");
+            var sortQuery = Uri.EscapeDataString("createdAt desc");
+            var requestUri = $"/api/vulnerability-reports?offset=0&limit=100&sort={sortQuery}";
+
+            using var response = await httpClient.GetAsync(requestUri);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -150,11 +153,14 @@ namespace DART.BlackduckAnalysis
 
             var content = await response.Content.ReadAsStringAsync();
             var jsonContent = JObject.Parse(content);
-            var latestReport = jsonContent["items"]?.OrderByDescending(item => item["createdAt"])?.FirstOrDefault();
-            var latestReportId = latestReport?["id"]?.ToString() ?? string.Empty;
+            var items = jsonContent["items"] as JArray;
+            var latestReport = items?
+                .OrderByDescending(item => item?["createdAt"])
+                .FirstOrDefault();
+            var latestReportId = VulnerabilityReportParser.ExtractReportId(latestReport) ?? string.Empty;
+            var latestStatus = latestReport?["status"]?.ToString() ?? latestReport?["complete"]?.ToString();
 
-            _logger.LogInformation($"GetLatestVulnerabilityReportId Id: {latestReport?["id"]}; " +
-                $"Complete Status: {latestReport?["complete"]?.ToString()}");
+            _logger.LogInformation($"GetLatestVulnerabilityReportId Id: {latestReportId}; Status: {latestStatus ?? "Unknown"}");
 
             return latestReportId;
         }
@@ -172,7 +178,10 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
 
-            using var response = await httpClient.GetAsync("/api/v1/vulnerability-reports?ascending=false&limit=100&offset=0&sortField=finishedAt");
+            var sortQuery = Uri.EscapeDataString("createdAt desc");
+            var requestUri = $"/api/vulnerability-reports?offset=0&limit=100&sort={sortQuery}";
+
+            using var response = await httpClient.GetAsync(requestUri);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -182,12 +191,16 @@ namespace DART.BlackduckAnalysis
 
             var content = await response.Content.ReadAsStringAsync();
             var jsonContent = JObject.Parse(content);
-            var report = jsonContent["items"]?.Where(item => item["id"].ToString() == reportId)?.FirstOrDefault();
+            var items = jsonContent["items"] as JArray;
+            var reportEntry = items?
+                .Select(item => new { Item = item, Id = VulnerabilityReportParser.ExtractReportId(item) })
+                .FirstOrDefault(entry => string.Equals(entry.Id, reportId, StringComparison.OrdinalIgnoreCase));
+            var report = reportEntry?.Item;
+            var status = report?["status"]?.ToString() ?? report?["complete"]?.ToString();
 
-            _logger.LogInformation($"GetVulnerabilityStatusReportCompleteStatus Id: {report?["id"]}; " +
-                $"Complete Status: {report?["complete"]?.ToString()}");
+            _logger.LogInformation($"GetVulnerabilityStatusReportCompleteStatus Id: {reportEntry?.Id ?? string.Empty}; Status: {status ?? "Unknown"}");
 
-            return bool.Parse(report?["complete"]?.ToString() ?? bool.FalseString);
+            return VulnerabilityReportParser.IsReportComplete(report);
         }
 
         public async Task<string> SaveReport(BlackduckConfiguration config, string reportId, string reportFolderPath)
@@ -203,14 +216,14 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.report-4+json");
 
-            using var response = await httpClient.GetAsync($"api/v1/reports/{reportId}.json");
+            using var response = await httpClient.GetAsync($"api/reports/{reportId}.json");
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError($"Error getting report.");
                 return string.Empty;
             }
 
-            var folderPath = Path.Combine(reportFolderPath, config.DownloadedReportsFolderName);
+            var folderPath = reportFolderPath;
 
             if (!Directory.Exists(folderPath))
             {
@@ -229,6 +242,5 @@ namespace DART.BlackduckAnalysis
             return filePath;
 
         }
-
     }
 }
