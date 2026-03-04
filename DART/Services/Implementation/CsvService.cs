@@ -5,6 +5,7 @@ using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 
 namespace DART.Services.Implementation
 {
@@ -57,23 +58,56 @@ namespace DART.Services.Implementation
                     continue;
                 }
 
+                // Collect all valid rows for this file first
+                var validRows = new List<RowDetails>();
                 for (int i = 1; i < csvData.Length; i++)
                 {
                     var rowDetails = ExtractRowDetails(csvData[i], latestVersion, configVersions);
-
-                    if (rowDetails == null)
-                    {
-                        continue;
-                    }
-
-                    var recommendedFix = _config.BlackduckConfiguration.IncludeRecommendedFix
-                        ? (await _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, rowDetails.VulnerabilityId))
-                        : "N/A";
-
-                    rowDetails.RecommendedFix = recommendedFix;
-
-                    _excelService.PopulateRow(rowDetails);
+                    if (rowDetails != null)
+                        validRows.Add(rowDetails);
                 }
+
+                if (validRows.Count == 0)
+                    continue;
+
+                // Fetch recommended fixes in parallel using a bounded channel of size 10
+                if (_config.BlackduckConfiguration.IncludeRecommendedFix)
+                {
+                    const int boundedCapacity = 10;
+                    var channel = Channel.CreateBounded<RowDetails>(boundedCapacity);
+
+                    var producer = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            foreach (var row in validRows)
+                                await channel.Writer.WriteAsync(row);
+                        }
+                        finally
+                        {
+                            channel.Writer.Complete();
+                        }
+                    });
+
+                    var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+                    {
+                        await foreach (var row in channel.Reader.ReadAllAsync())
+                        {
+                            row.RecommendedFix = await _blackduckApiService.GetRecommendedFix(
+                                _config.BlackduckConfiguration, row.VulnerabilityId);
+                        }
+                    })).ToArray();
+
+                    await Task.WhenAll([producer, .. consumers]);
+                }
+                else
+                {
+                    foreach (var row in validRows)
+                        row.RecommendedFix = "N/A";
+                }
+
+                foreach (var row in validRows)
+                    _excelService.PopulateRow(row);
             }
         }
 

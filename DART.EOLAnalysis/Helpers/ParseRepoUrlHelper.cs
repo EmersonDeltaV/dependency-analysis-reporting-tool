@@ -15,8 +15,8 @@ namespace DART.EOLAnalysis.Helpers
             {
                 string organization = segments[0];
                 // Project name might contain slashes, so we need to combine all segments between org and _git
-                string project = string.Join("/", segments.Skip(1).Take(segments.Length - 3));
-                string repoName = segments[segments.Length - 1];
+                string project = string.Join("/", segments.Skip(1).Take(segments.Length - 3)).Replace("%20", " "); // Handle URL-encoded spaces
+                string repoName = segments[segments.Length - 1].Replace("%20", " "); // Handle URL-encoded spaces
 
                 return (organization, project, repoName);
             }

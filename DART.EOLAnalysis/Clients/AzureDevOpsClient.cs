@@ -72,6 +72,51 @@ namespace DART.EOLAnalysis.Clients
             }
         }
 
+        public async Task<List<GitItem>> FindPackageJsonFilesAsync(Repository repo, CancellationToken cancellationToken = default)
+        {
+            string apiUrl = $"https://dev.azure.com/{repo.Organization}/{repo.Project}/_apis/git/repositories/{repo.RepositoryName}/items?recursionLevel=Full&api-version=7.0";
+
+            if (!string.IsNullOrEmpty(repo.Branch))
+            {
+                apiUrl += $"&versionDescriptor.version={repo.Branch}&versionDescriptor.versionType=branch";
+            }
+
+            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
+
+            if (!response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NonAuthoritativeInformation)
+            {
+                _logger.LogError("Failed to retrieve package.json files from repository '{RepositoryName}'. Status: {StatusCode} ({ReasonPhrase})",
+                    repo.RepositoryName, (int)response.StatusCode, response.ReasonPhrase);
+                return [];
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            try
+            {
+                var fileList = JsonSerializer.Deserialize<GitItemsResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                });
+
+                var filters = repo.FileSkipFilter.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // Filter for package.json files, excluding node_modules and any user-defined skip paths
+                return fileList?.Value
+                    .Where(item => item.GitObjectType == "blob"
+                                && item.Path.EndsWith("package.json", StringComparison.OrdinalIgnoreCase)
+                                && !item.Path.Contains("node_modules", StringComparison.OrdinalIgnoreCase)
+                                && !filters.Any(filter => item.Path.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    .ToList() ?? new List<GitItem>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError("Failed to parse JSON response from Azure DevOps API for repository '{RepositoryName}'. Error: {ErrorMessage}",
+                    repo.RepositoryName, ex.Message);
+                return [];
+            }
+        }
+
         public async Task<string> GetFileContentAsync(Repository repo, string filePath, CancellationToken cancellationToken = default)
         {
             var downloadUrl = $"https://dev.azure.com/{repo.Organization}/{repo.Project}/_apis/git/repositories/{repo.RepositoryName}/items?path={Uri.EscapeDataString(filePath)}&api-version=7.1&$format=octetStream";

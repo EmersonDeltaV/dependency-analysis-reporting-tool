@@ -43,7 +43,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Util", "1.2.3"), ("Emerson.Utility", "2.0.0"), ("Other", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             // emerson.uti? should match both Util and Utility (case-insensitive, '?' wildcard)
@@ -65,8 +65,9 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             var logger = Substitute.For<ILogger<ProjectAnalysisService>>();
             var nuget = Substitute.For<INugetMetadataService>();
+            var npm = Substitute.For<INpmMetadataService>();
             var rec = Substitute.For<IPackageRecommendationService>();
-            var svc = new ProjectAnalysisService(logger, nuget, rec);
+            var svc = new ProjectAnalysisService(logger, nuget, npm, rec);
             return (svc, nuget, rec, logger);
         }
 
@@ -87,7 +88,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -120,7 +121,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -151,7 +152,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Single(result);

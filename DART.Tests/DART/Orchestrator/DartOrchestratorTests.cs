@@ -54,17 +54,18 @@ namespace DART.Tests.DART.Orchestrator
                 },
                 FeatureToggles = new FeatureToggles
                 {
-                    EnableEOLAnalysis = false
+                    EnableCSharpAnalysis = false,
+                    EnableNpmAnalysis = false
                 },
                 EOLAnalysis = new EOLAnalysisConfig()
             };
         }
 
-        private Config CreateConfigWithFeatures(bool enableDownloadTool = false, bool enableEOLAnalysis = false,
+        private Config CreateConfigWithFeatures(bool enableDownloadTool = false, bool enableCSharpAnalysis = false,
             string previousResults = "", string currentResults = "", int repositoryCount = 0)
         {
             var config = CreateDefaultConfig();
-            config.FeatureToggles.EnableEOLAnalysis = enableEOLAnalysis;
+            config.FeatureToggles.EnableCSharpAnalysis = enableCSharpAnalysis;
             config.BlackduckConfiguration.PreviousResults = previousResults;
             config.BlackduckConfiguration.CurrentResults = currentResults;
 
@@ -107,7 +108,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateDefaultConfig();
             config.FeatureToggles.EnableBlackduckAnalysis = false;
-            config.FeatureToggles.EnableEOLAnalysis = true;
+            config.FeatureToggles.EnableCSharpAnalysis = true;
             config.EOLAnalysis.Repositories = new List<Repository>
             {
                 new Repository { Name = "Repo1", Url = "https://dev.azure.com/Org/Proj/_git/Repo1", Branch = "main" }
@@ -115,7 +116,7 @@ namespace DART.Tests.DART.Orchestrator
 
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(new List<PackageData>());
 
             var program = CreateProgram(config);
@@ -129,7 +130,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockCsvService.DidNotReceive().AnalyzeReport();
 
             _mockExcelService.Received(1).GetWorkbook();
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(config.EOLAnalysis, Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
             _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
         }
 
@@ -137,7 +138,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldCallGenerateReportAnalyzeReportAndCleanup_WhenNoPreviousResultsAndDownloadToolEnabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -174,10 +175,10 @@ namespace DART.Tests.DART.Orchestrator
                 new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
             };
 
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 2);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 2);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(eolData));
 
             var program = CreateProgram(config);
@@ -187,8 +188,8 @@ namespace DART.Tests.DART.Orchestrator
             await program.StartAsync(cancellationToken);
 
             // Assert
-            // 1.3.4 If EnableEOLAnalysis = true and repositories > 0: AnalyzeRepositoriesAsync called
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            // 1.3.4 If EnableCSharpAnalysis = true and repositories > 0: AnalyzeRepositoriesAsync called
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
 
             // on non-empty result, AddEOLAnalysisSheet called
             _mockExcelService.Received(1).AddEOLAnalysisSheet(mockWorkbook, eolData);
@@ -202,7 +203,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallEOLAnalysis_WhenEOLAnalysisEnabledButNoRepositories()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 0);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 0);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -214,7 +215,7 @@ namespace DART.Tests.DART.Orchestrator
 
             // Assert
             // 1.3.4 AnalyzeRepositoriesAsync NOT called when repositories is empty
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
 
             // AddEOLAnalysisSheet NOT called
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
@@ -226,10 +227,10 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var emptyEolData = new List<PackageData>();
 
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(emptyEolData));
 
             var program = CreateProgram(config);
@@ -240,7 +241,7 @@ namespace DART.Tests.DART.Orchestrator
 
             // Assert
             // AnalyzeRepositoriesAsync called but AddEOLAnalysisSheet NOT called for empty result
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
 
             // Verify appropriate logging for empty result
@@ -251,7 +252,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldCallGenerateReportAndCleanup_ByDefault()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: false);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -284,10 +285,10 @@ namespace DART.Tests.DART.Orchestrator
                 new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
             };
 
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 2);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: true, repositoryCount: 2);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(eolData));
 
             var program = CreateProgram(config);
@@ -307,7 +308,7 @@ namespace DART.Tests.DART.Orchestrator
             _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
 
             // EOL analysis should still work when download tool is disabled
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
             _mockExcelService.Received(1).AddEOLAnalysisSheet(mockWorkbook, eolData);
 
             // Verify logging
@@ -320,7 +321,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallEOLAnalysis_WhenEOLAnalysisDisabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false, repositoryCount: 2);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false, repositoryCount: 2);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -332,7 +333,7 @@ namespace DART.Tests.DART.Orchestrator
 
             // Assert
             // 1.5.1 AnalyzeRepositoriesAsync NOT called
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
 
             // 1.5.2 AddEOLAnalysisSheet NOT called
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
@@ -349,12 +350,12 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldHandleEOLAnalysisException_WhenEOLAnalysisThrows()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 2);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 2);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             var expectedException = new InvalidOperationException("EOL Analysis failed");
 
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(_ => Task.FromException<List<PackageData>>(expectedException));
 
             var program = CreateProgram(config);
@@ -377,7 +378,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // EOL analysis should have been attempted
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
 
             // AddEOLAnalysisSheet should NOT be called when exception occurs
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
@@ -387,12 +388,12 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldHandleEOLAnalysisException_WhenDownloadToolDisabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             var expectedException = new ArgumentException("Configuration error");
 
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(_ => Task.FromException<List<PackageData>>(expectedException));
 
             var program = CreateProgram(config);
@@ -415,7 +416,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockBlackduckReportGenerator.Received(1).Cleanup();
 
             // EOL analysis should have been attempted
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
         }
 
         [Fact]
@@ -424,7 +425,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateConfigWithFeatures(
                 enableDownloadTool: true,
-                enableEOLAnalysis: true,
+                enableCSharpAnalysis: true,
                 previousResults: "C:\\Previous\\report.xlsx",
                 currentResults: "C:\\Current\\report.xlsx",
                 repositoryCount: 2);
@@ -445,7 +446,7 @@ namespace DART.Tests.DART.Orchestrator
             _mockExcelService.DidNotReceive().GetWorkbook();
             _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
             await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
         }
 
@@ -491,7 +492,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldLogHttpRequestException_WhenHttpRequestExceptionThrown()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var httpException = new HttpRequestException("Network error");
 
             _mockBlackduckReportGenerator.GenerateReport().Returns<Task>(x => throw httpException);
@@ -511,7 +512,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldLogGenericException_WhenUnexpectedExceptionThrown()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var genericException = new InvalidOperationException("Unexpected error");
 
             _mockCsvService.AnalyzeReport().Returns<Task>(x => throw genericException);
@@ -531,7 +532,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldLogArgumentException_WhenArgumentExceptionThrown()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var argumentException = new ArgumentException("Invalid argument");
 
             _mockCsvService.AnalyzeReport().Returns<Task>(x => throw argumentException);
@@ -551,7 +552,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldLogConfigException_WhenConfigExceptionThrown()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var configException = new ConfigException("Configuration error");
 
             _mockCsvService.AnalyzeReport().Returns<Task>(x => throw configException);
@@ -571,12 +572,12 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldSaveWorkbookEvenWhenEOLAnalysisExceptionOccurs_WhenDownloadToolEnabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             var exception = new InvalidOperationException("EOL Analysis exception");
 
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns<Task<List<PackageData>>>(x => Task.FromException<List<PackageData>>(exception));
 
             var program = CreateProgram(config);
@@ -600,7 +601,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldCleanupWhenExceptionOccursBeforeWorkbookCreated_WhenDownloadToolEnabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var exception = new InvalidOperationException("Test exception before workbook");
 
             // Exception occurs before workbook is created (during AnalyzeReport)
@@ -627,7 +628,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallCleanupWhenExceptionOccurs_WhenDownloadToolDisabled()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: false);
             var exception = new InvalidOperationException("Test exception");
 
             // Exception occurs before workbook is created (during AnalyzeReport)
@@ -736,7 +737,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateConfigWithFeatures(
                 enableDownloadTool: true,
-                enableEOLAnalysis: true,
+                enableCSharpAnalysis: true,
                 previousResults: "C:\\Previous\\report.xlsx",
                 currentResults: "", // Empty current results
                 repositoryCount: 2);
@@ -762,7 +763,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateConfigWithFeatures(
                 enableDownloadTool: true,
-                enableEOLAnalysis: true,
+                enableCSharpAnalysis: true,
                 previousResults: "", // Empty previous results
                 currentResults: "C:\\Current\\report.xlsx",
                 repositoryCount: 2);
@@ -791,10 +792,10 @@ namespace DART.Tests.DART.Orchestrator
                 new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
             };
 
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(eolData));
 
             var program = CreateProgram(config);
@@ -809,7 +810,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockBlackduckReportGenerator.GenerateReport();
                 _mockCsvService.AnalyzeReport();
                 _mockExcelService.GetWorkbook();
-                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
                 _mockExcelService.AddEOLAnalysisSheet(mockWorkbook, eolData);
                 _mockExcelService.SaveWorkbook(mockWorkbook);
                 _mockBlackduckReportGenerator.Cleanup();
@@ -820,7 +821,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldFollowCorrectCallOrder_WhenDownloadToolEnabledWithoutEOLAnalysis()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -850,10 +851,10 @@ namespace DART.Tests.DART.Orchestrator
                 new PackageData { Id = "TestPackage", Version = "1.0.0", Project = "TestProject" }
             };
 
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(eolData));
 
             var program = CreateProgram(config);
@@ -868,7 +869,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockBlackduckReportGenerator.GenerateReport();
                 _mockCsvService.AnalyzeReport();
                 _mockExcelService.GetWorkbook();
-                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
                 _mockExcelService.AddEOLAnalysisSheet(mockWorkbook, eolData);
                 _mockExcelService.SaveWorkbook(mockWorkbook);
                 _mockBlackduckReportGenerator.Cleanup();
@@ -881,7 +882,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateConfigWithFeatures(
                 enableDownloadTool: true,
-                enableEOLAnalysis: true,
+                enableCSharpAnalysis: true,
                 previousResults: "C:\\Previous\\report.xlsx",
                 currentResults: "C:\\Current\\report.xlsx",
                 repositoryCount: 2);
@@ -901,19 +902,19 @@ namespace DART.Tests.DART.Orchestrator
             _mockExcelService.DidNotReceive().GetWorkbook();
             _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
             await _mockBlackduckReportGenerator.DidNotReceive().Cleanup();
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task StartAsync_ShouldMaintainCallOrderEvenWithEOLException()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 1);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             var exception = new InvalidOperationException("EOL Analysis failed");
 
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns<Task<List<PackageData>>>(x => Task.FromException<List<PackageData>>(exception));
 
             var program = CreateProgram(config);
@@ -928,7 +929,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockBlackduckReportGenerator.GenerateReport();
                 _mockCsvService.AnalyzeReport();
                 _mockExcelService.GetWorkbook();
-                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+                _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
                 // AddEOLAnalysisSheet should NOT be called due to exception
                 _mockExcelService.SaveWorkbook(mockWorkbook); // Still called in main flow
                 _mockBlackduckReportGenerator.Cleanup();
@@ -944,7 +945,7 @@ namespace DART.Tests.DART.Orchestrator
             // Arrange
             var config = CreateConfigWithFeatures(
                 enableDownloadTool: true,
-                enableEOLAnalysis: true,
+                enableCSharpAnalysis: true,
                 previousResults: "C:\\Previous\\report.xlsx",
                 currentResults: "C:\\Current\\report.xlsx",
                 repositoryCount: 5);
@@ -961,7 +962,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockCsvService.DidNotReceive().AnalyzeReport();
             _mockExcelService.DidNotReceive().GetWorkbook();
             _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
 
             // Only CompareExcelFiles should be called
@@ -972,7 +973,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallEOLMethods_WhenEOLAnalysisDisabledRegardlessOfRepositoryCount()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false, repositoryCount: 10);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false, repositoryCount: 10);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -983,7 +984,7 @@ namespace DART.Tests.DART.Orchestrator
             await program.StartAsync(cancellationToken);
 
             // Assert - Verify EOL methods are NOT called even with repositories configured
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
 
             // Verify other methods are called normally
@@ -998,7 +999,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallDownloadMethods_WhenDownloadToolDisabledRegardlessOfOtherSettings()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableEOLAnalysis: true, repositoryCount: 5);
+            var config = CreateConfigWithFeatures(enableDownloadTool: false, enableCSharpAnalysis: true, repositoryCount: 5);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             var eolData = new List<PackageData>
             {
@@ -1006,7 +1007,7 @@ namespace DART.Tests.DART.Orchestrator
             };
 
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
-            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>())
+            _mockEOLAnalysisService.AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(eolData));
 
             var program = CreateProgram(config);
@@ -1023,7 +1024,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockCsvService.Received(1).AnalyzeReport();
             _mockExcelService.Received(1).GetWorkbook();
             _mockExcelService.Received(1).SaveWorkbook(mockWorkbook);
-            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), cancellationToken);
+            await _mockEOLAnalysisService.Received(1).AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), cancellationToken);
             _mockExcelService.Received(1).AddEOLAnalysisSheet(mockWorkbook, eolData);
         }
 
@@ -1031,7 +1032,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallComparisonMethods_WhenInitialFlowIsUsed()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: false);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: false);
             var mockWorkbook = Substitute.For<IXLWorkbook>();
             _mockExcelService.GetWorkbook().Returns(mockWorkbook);
 
@@ -1056,7 +1057,7 @@ namespace DART.Tests.DART.Orchestrator
         public async Task StartAsync_ShouldNotCallUnrelatedMethods_WhenSpecificExceptionOccurs()
         {
             // Arrange
-            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableEOLAnalysis: true, repositoryCount: 1);
+            var config = CreateConfigWithFeatures(enableDownloadTool: true, enableCSharpAnalysis: true, repositoryCount: 1);
             var httpException = new HttpRequestException("Network error");
 
             // Exception occurs during GenerateReport
@@ -1072,7 +1073,7 @@ namespace DART.Tests.DART.Orchestrator
             await _mockCsvService.DidNotReceive().AnalyzeReport();
             _mockExcelService.DidNotReceive().GetWorkbook();
             _mockExcelService.DidNotReceive().SaveWorkbook(Arg.Any<IXLWorkbook>());
-            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<CancellationToken>());
+            await _mockEOLAnalysisService.DidNotReceive().AnalyzeRepositoriesAsync(Arg.Any<EOLAnalysisConfig>(), Arg.Any<FeatureToggles>(), Arg.Any<CancellationToken>());
             _mockExcelService.DidNotReceive().AddEOLAnalysisSheet(Arg.Any<IXLWorkbook>(), Arg.Any<List<PackageData>>());
             _mockExcelService.DidNotReceive().CompareExcelFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
 

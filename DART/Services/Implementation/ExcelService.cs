@@ -153,8 +153,17 @@ namespace DART.Services.Implementation
         /// <param name="workbook">The workbook to add the EOL Analysis sheet to.</param>
         /// <param name="eolData">The EOL analysis data to populate in the worksheet.</param>
         public void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData)
+            => AddEOLAnalysisSheet(workbook, eolData, "EOL Analysis");
+
+        /// <summary>
+        /// Adds an EOL Analysis worksheet with a custom sheet name to the provided workbook.
+        /// </summary>
+        /// <param name="workbook">The workbook to add the sheet to.</param>
+        /// <param name="eolData">The EOL analysis data to populate in the worksheet.</param>
+        /// <param name="sheetName">The name for the new worksheet.</param>
+        public void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData, string sheetName)
         {
-            var eolWorksheet = workbook.Worksheets.Add("EOL Analysis");
+            var eolWorksheet = workbook.Worksheets.Add(sheetName);
 
             // Add headers
             eolWorksheet.Cell(1, 1).Value = "Package ID";

@@ -71,6 +71,7 @@ class Program
         builder.Services.AddSingleton<IRepositoryProcessorService, RepositoryProcessorService>();
         builder.Services.AddSingleton<IProjectAnalysisService, ProjectAnalysisService>();
         builder.Services.AddSingleton<IPackageRecommendationService, PackageRecommendationService>();
+        builder.Services.AddSingleton<INpmMetadataService, NpmMetadataService>();
 
         using IHost host = builder.Build();
 

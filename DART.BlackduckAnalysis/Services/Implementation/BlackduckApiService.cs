@@ -2,8 +2,10 @@ using DART.BlackduckAnalysis.Helpers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 
 namespace DART.BlackduckAnalysis
 {
@@ -264,33 +266,56 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.internal-1+json");
 
-            var projectVersions = new Dictionary<string, string>();
+            const int boundedCapacity = 10;
+            var channel = Channel.CreateBounded<BlackduckRepository>(boundedCapacity);
+            var projectVersions = new ConcurrentDictionary<string, string>();
 
-            foreach (var repo in config.BlackduckRepositories)
+            // Producer: write all repos into the channel
+            var producer = Task.Run(async () =>
             {
-                var sortQuery = Uri.EscapeDataString("lastScanDate desc");
-                var response = await httpClient.GetAsync($"api/projects/{repo.Id}/versions?limit=1&offset=0&sort={sortQuery}");
-                if (!response.IsSuccessStatusCode)
+                try
                 {
-                    var content_ = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error getting project version for {repo.Name} ({repo.Id}): {content_}");
-                    continue;
+                    foreach (var repo in config.BlackduckRepositories)
+                        await channel.Writer.WriteAsync(repo);
                 }
+                finally
+                {
+                    channel.Writer.Complete();
+                }
+            });
 
-                var content = await response.Content.ReadAsStringAsync();
-                var jsonContent = JObject.Parse(content);
-                var versions = jsonContent["items"] as JArray;
+            // Consumers: up to boundedCapacity parallel HTTP calls
+            var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+            {
+                await foreach (var repo in channel.Reader.ReadAllAsync())
+                {
+                    var sortQuery = Uri.EscapeDataString("lastScanDate desc");
+                    var response = await httpClient.GetAsync($"api/projects/{repo.Id}/versions?limit=1&offset=0&sort={sortQuery}");
 
-                var latestVersion = versions?
-                    .OrderByDescending(v => v?["lastScanDate"])
-                    .FirstOrDefault()?["versionName"]?.ToString() ?? string.Empty;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        _logger.LogError($"Error getting project version for {repo.Name} ({repo.Id}): {errorContent}");
+                        continue;
+                    }
 
-                projectVersions[repo.Id] = latestVersion;
+                    var content = await response.Content.ReadAsStringAsync();
+                    var jsonContent = JObject.Parse(content);
+                    var versions = jsonContent["items"] as JArray;
 
-                _logger.LogInformation($"Latest version for {repo.Name} ({repo.Id}) is {latestVersion}");
-            }
+                    var latestVersion = versions?
+                        .OrderByDescending(v => v?["lastScanDate"])
+                        .FirstOrDefault()?["versionName"]?.ToString() ?? string.Empty;
 
-            return projectVersions;
+                    projectVersions[repo.Id] = latestVersion;
+
+                    _logger.LogInformation($"Latest version for {repo.Name} ({repo.Id}) is {latestVersion}");
+                }
+            })).ToArray();
+
+            await Task.WhenAll([producer, .. consumers]);
+
+            return new Dictionary<string, string>(projectVersions);
         }
     }
 }

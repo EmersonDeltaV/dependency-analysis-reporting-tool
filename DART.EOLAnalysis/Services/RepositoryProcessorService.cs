@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using DART.EOLAnalysis.Models;
 using DART.EOLAnalysis.Clients;
@@ -13,83 +14,123 @@ namespace DART.EOLAnalysis.Services
             _logger = logger;
         }
 
-        public async Task<List<ProjectInfo>> ProcessRepositoryAsync(Repository repository,
-                                                                    IAzureDevOpsClient azureDevOpsClient,
-                                                                    CancellationToken cancellationToken = default)
+        public async Task<List<ProjectInfo>> ProcessRepositoryAsync(
+            Repository repository,
+            IAzureDevOpsClient azureDevOpsClient,
+            FeatureToggles toggles,
+            CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation("Processing repository: {RepositoryName} ({RepositoryUrl})", repository.Name, repository.Url);
 
-                // Parse repository URL to get organization, project, and repo name
                 repository.ParseUrl();
 
-                var projectInfos = await FindProjectFilesAsync(repository, azureDevOpsClient, cancellationToken);
+                var projectInfos = new List<ProjectInfo>();
 
-                if (projectInfos.Count == 0)
+                if (toggles.EnableCSharpAnalysis)
                 {
-                    _logger.LogWarning("Empty .csproj files found in repository '{RepositoryName}'. This may indicate access issues, invalid Azure token (PAT), or the repository may not contain .NET projects.",
-                        repository.Name);
+                    var csharpProjects = await FindFilesAsync(
+                        repository, azureDevOpsClient,
+                        r => azureDevOpsClient.FindCsProjFilesAsync(r, cancellationToken),
+                        ProjectType.CSharp, cancellationToken);
+
+                    if (csharpProjects.Count == 0)
+                        _logger.LogWarning("No .csproj files found in repository '{RepositoryName}'.", repository.Name);
+                    else
+                        _logger.LogInformation("Found {Count} .csproj file(s) in repository {RepositoryName}", csharpProjects.Count, repository.Name);
+
+                    projectInfos.AddRange(csharpProjects);
                 }
-                else
+
+                if (toggles.EnableNpmAnalysis)
                 {
-                    _logger.LogInformation("Found {ProjectCount} .csproj files in repository {RepositoryName}",
-                        projectInfos.Count, repository.Name);
+                    var npmProjects = await FindFilesAsync(
+                        repository, azureDevOpsClient,
+                        r => azureDevOpsClient.FindPackageJsonFilesAsync(r, cancellationToken),
+                        ProjectType.Npm, cancellationToken);
+
+                    if (npmProjects.Count == 0)
+                        _logger.LogWarning("No package.json files found in repository '{RepositoryName}'.", repository.Name);
+                    else
+                        _logger.LogInformation("Found {Count} package.json file(s) in repository {RepositoryName}", npmProjects.Count, repository.Name);
+
+                    projectInfos.AddRange(npmProjects);
                 }
 
                 return projectInfos;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing repository '{RepositoryName}': {ErrorMessage}",
-                    repository.Name, ex.Message);
+                _logger.LogError(ex, "Error processing repository '{RepositoryName}': {ErrorMessage}", repository.Name, ex.Message);
                 throw;
             }
         }
 
-        private async Task<List<ProjectInfo>> FindProjectFilesAsync(Repository repository, IAzureDevOpsClient azureDevOpsClient, CancellationToken cancellationToken)
+        private async Task<List<ProjectInfo>> FindFilesAsync(
+            Repository repository,
+            IAzureDevOpsClient azureDevOpsClient,
+            Func<Repository, Task<List<GitItem>>> findFiles,
+            ProjectType projectType,
+            CancellationToken cancellationToken)
         {
-            // Find all .csproj files in the repository
-            var gitItems = await azureDevOpsClient.FindCsProjFilesAsync(repository, cancellationToken);
+            var gitItems = await findFiles(repository);
 
-            // Return early if no project files found
             if (gitItems == null || gitItems.Count == 0)
-            {
                 return [];
-            }
 
-            var projectInfos = new List<ProjectInfo>();
+            const int boundedCapacity = 10;
+            var channel = Channel.CreateBounded<GitItem>(boundedCapacity);
+            var projectInfos = new System.Collections.Concurrent.ConcurrentBag<ProjectInfo>();
 
-            foreach (var gitItem in gitItems)
+            // Producer: write all git items into the channel
+            var producer = Task.Run(async () =>
             {
-                // Extract project name from path
-                var pathParts = gitItem.Path.Split('/');
-                var projectName = pathParts.Length > 1 ? pathParts[^2] : repository.Name;
-
                 try
                 {
-                    // Get the .csproj file content
-                    var csProjContent = await azureDevOpsClient.GetFileContentAsync(repository, gitItem.Path, cancellationToken);
-
-                    projectInfos.Add(new ProjectInfo
-                    {
-                        Name = projectName,
-                        FilePath = gitItem.Path,
-                        Content = csProjContent,
-                        RepositoryName = repository.RepositoryName
-                    });
-
-                    _logger.LogInformation("Retrieved content for project: {ProjectName}", projectName);
+                    foreach (var gitItem in gitItems)
+                        await channel.Writer.WriteAsync(gitItem, cancellationToken);
                 }
-                catch (Exception ex)
+                finally
                 {
-                    _logger.LogWarning(ex, "Failed to get content for project file {ProjectPath} in project {ProjectName}: {ErrorMessage}",
-                        gitItem.Path, projectName, ex.Message);
-                    // Continue processing other files
+                    channel.Writer.Complete();
                 }
-            }
+            }, cancellationToken);
 
-            return projectInfos;
+            // Consumers: spin up bounded-capacity parallel consumers
+            var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+            {
+                await foreach (var gitItem in channel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    var pathParts = gitItem.Path.Split('/');
+                    var projectName = pathParts.Length > 1 ? pathParts[^2] : repository.Name;
+
+                    try
+                    {
+                        var content = await azureDevOpsClient.GetFileContentAsync(repository, gitItem.Path, cancellationToken);
+
+                        projectInfos.Add(new ProjectInfo
+                        {
+                            Name = projectName,
+                            FilePath = gitItem.Path,
+                            Content = content,
+                            RepositoryName = repository.RepositoryName,
+                            ProjectType = projectType
+                        });
+
+                        _logger.LogInformation("Retrieved content for {ProjectType} project: {ProjectName}", projectType, projectName);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get content for {FilePath} in repository {RepositoryName}: {ErrorMessage}",
+                            gitItem.Path, repository.Name, ex.Message);
+                    }
+                }
+            }, cancellationToken)).ToArray();
+
+            await Task.WhenAll([producer, .. consumers]);
+
+            return [.. projectInfos];
         }
     }
 }
