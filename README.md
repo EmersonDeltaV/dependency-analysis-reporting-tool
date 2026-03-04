@@ -48,17 +48,19 @@ Navigate to the `DART/config.json` file and configure the following core setting
   "BaseUrl": "https://blackduck.emrsn.org",
   "Token": "your-blackduck-token",
   "IncludeTransitiveDependency": "true",
-  "ProjectVersionsToInclude": "main",
+  "IncludeRecommendedFix": "main",
   "PreviousResults": "",
   "CurrentResults": "",
   "BlackduckRepositories": [
     {
-      "Name": "ProjectX",
-      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "Name": "read-service",
+      "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "Version": "<latest>"
     },
     {
-      "Name": "ProjectX",
-      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "Name": "central-postgres",
+      "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "Version": "trunk-v1"
     }
   ],
   "DownloadParameters": {
@@ -97,9 +99,12 @@ Navigate to the `DART/config.json` file and configure the following core setting
     "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
       {
-        "Name": "ProjectName",
-        "Url": "https://dev.azure.com/org/project/_git/repository",
-        "Branch": "main"
+        "Name": "Repository",
+        "Url": "https://dev.azure.com/Organization/Project/_git/Repository",
+        "Branch": "nebula/v1",
+        "FileSkipFilter": [
+          "TestService"
+        ]
       }
     ],
     "PackageRecommendation": {

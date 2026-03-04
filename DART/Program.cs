@@ -19,7 +19,10 @@ class Program
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
         var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("config.json")
+            .AddJsonFile($"config.{Environment.GetEnvironmentVariable("DART_APP_CODE")}.json", optional: true)
+            .AddEnvironmentVariables(prefix: "DART_")
             .Build();
 
         builder.Configuration.AddConfiguration(configuration);
@@ -71,12 +74,6 @@ class Program
 
         using IHost host = builder.Build();
 
-        await host.StartAsync();
-
-        Console.WriteLine("Press any key to close this window...");
-        Console.ReadLine();
-
-        await host.StopAsync();
-
+        await host.RunAsync();
     }
 }

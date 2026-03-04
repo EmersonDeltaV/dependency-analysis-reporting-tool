@@ -7,6 +7,7 @@ namespace DART.EOLAnalysis.Models
         public string Name { get; set; } = string.Empty;
         public string Url { get; set; } = string.Empty;
         public string Branch { get; set; } = "main";
+        public List<string> FileSkipFilter { get; set; } = [];
 
         // These will be populated after parsing the URL
         public string Organization { get; private set; } = string.Empty;

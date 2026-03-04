@@ -1,7 +1,7 @@
 {
   "ReportConfiguration": {
-    "OutputFilePath": "C:\\BlackDuck",
-    "LogPath": "C:\\BlackDuck",
+    "OutputFilePath": "BlackDuck",
+    "LogPath": "BlackDuck",
     "ProductName": "ProductName",
     "ProductVersion": "v1.0",
     "ProductIteration": "PIXX"
@@ -10,21 +10,13 @@
     "BaseUrl": "https://blackduck.emrsn.org",
     "Token": "<YOUR_BLACKDUCK_ACCESS_TOKEN>",
     "IncludeTransitiveDependency": "true",
-    "ProjectVersionsToInclude": "main",
+    "IncludeRecommendedFix": "true",
     "PreviousResults": "",
     "CurrentResults": "",
     "BlackduckRepositories": [
-      {
-        "Name": "Project_Name1",
-        "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-      },
-      {
-        "Name": "Project_Name2",
-        "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-      }
     ],
     "DownloadParameters": {
-      "MaxTries": 20,
+      "MaxTries": 30,
       "PollingDelayMilliseconds": 5000
     }
   },
@@ -32,16 +24,6 @@
     "Pat": "<YOUR_PERSONAL_ACCESS_TOKEN>",
     "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
-      {
-        "Name": "Project_Name1",
-        "Url": "https://dev.azure.com/EmersonPSS/PSS/_git/Project_Name1",
-        "Branch": "main"
-      },
-      {
-        "Name": "Project_Name2",
-        "Url": "https://dev.azure.com/EmersonPSS/PSS/_git/Project_Name2",
-        "Branch": "main"
-      }
     ],
     "PackageRecommendation": {
       "OldPackageThresholdYears": 3.0,
