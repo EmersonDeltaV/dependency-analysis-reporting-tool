@@ -47,20 +47,20 @@ Navigate to the `DART/config.json` file and configure the following core setting
 "BlackduckConfiguration": {
   "BaseUrl": "https://blackduck.emrsn.org",
   "Token": "your-blackduck-token",
-  "IncludeTransitiveDependency": "true",
-  "IncludeRecommendedFix": "main",
+  "IncludeTransitiveDependency": true,
+  "IncludeRecommendedFix": true,
   "PreviousResults": "",
   "CurrentResults": "",
   "BlackduckRepositories": [
     {
-      "Name": "read-service",
+      "Name": "Project_Name1",
       "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "Version": "<latest>"
+      "Versions": "<latest>,trunk-153214"
     },
     {
-      "Name": "central-postgres",
+      "Name": "Project_Name2",
       "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "Version": "trunk-v1"
+      "Versions": "trunk-v1"
     }
   ],
   "DownloadParameters": {
@@ -126,7 +126,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
 }
 ```
 
-- SkipInternalPackagesFilter: Optional wildcard patterns (supports `*` and `?`) used to mark packages by Id as internal/skipped. Matching packages remain in results with the Recommended Action set to `Messages.SkipInternal`.
+- `SkipInternalPackagesFilter`: Optional wildcard patterns (supports `*` and `?`) used to mark packages by Id as internal/skipped. Matching packages remain in results with the Recommended Action set to `Messages.SkipInternal`.
+- `FileSkipFilter`: Optional list of file paths (e.g., "src/legacy/", "tests/") to exclude from analysis. If a repository file path contains any of these patterns, it will be skipped during EOL analysis.
 
 ## Troubleshooting
 

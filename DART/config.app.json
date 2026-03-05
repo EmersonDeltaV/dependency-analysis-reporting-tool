@@ -9,12 +9,12 @@
       {
         "Name": "read-service",
         "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        "Version": "<latest>"
+        "Versions": "<latest>"
       },
       {
         "Name": "central-postgres",
         "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        "Version": "trunk-v1"
+        "Versions": "trunk-v1"
       }
     ]
   },

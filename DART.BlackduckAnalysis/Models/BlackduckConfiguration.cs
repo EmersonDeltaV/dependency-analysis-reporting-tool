@@ -69,9 +69,9 @@ namespace DART.BlackduckAnalysis
         public string Id { get; set; } = string.Empty;
 
         /// <summary>
-        /// Project version to include in the report
+        /// Comma-separated list of project versions to include in the report
         /// </summary>
-        public string Version { get; set; } = string.Empty;
+        public string Versions { get; set; } = string.Empty;
     }
 
     /// <summary>

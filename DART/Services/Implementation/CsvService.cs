@@ -43,7 +43,7 @@ namespace DART.Services.Implementation
             var csvFiles = GetCsvFiles();
 
             var latestVersion = await _blackduckApiService.GetLatestProjectVersion(_config.BlackduckConfiguration);
-            var configVersions = _config.BlackduckConfiguration.BlackduckRepositories.ToDictionary(r => r.Id, r => r.Version);
+            var configVersions = _config.BlackduckConfiguration.BlackduckRepositories.ToDictionary(r => r.Id, r => r.Versions);
 
             foreach (var csvFile in csvFiles)
             {

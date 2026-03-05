@@ -45,19 +45,19 @@ namespace DART.EOLAnalysis.Services
 
             if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
-            if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
-            {
-                return _config!.Messages.UpdateToNewer;
-            }
-            else
-            {
-                return defaultAction;
-            }
+                if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
+                {
+                    return _config!.Messages.UpdateToNewer;
+                }
+                else
+                {
+                    return defaultAction;
+                }
             }
 
             if (!string.IsNullOrEmpty(package.LatestVersionDate) && string.IsNullOrEmpty(package.VersionDate))
             {
-            return _config!.Messages.ToBeDecided;
+                return _config!.Messages.ToBeDecided;
             }
 
             return defaultAction;
@@ -67,10 +67,10 @@ namespace DART.EOLAnalysis.Services
         {
             if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
-            if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
-            {
-                return _config!.Messages.NearEolUpdate;
-            }
+                if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
+                {
+                    return _config!.Messages.NearEolUpdate;
+                }
             }
 
             return _config!.Messages.NoAction;
