@@ -18,6 +18,7 @@ namespace DART
         private readonly IEOLAnalysisService _eolAnalysisService;
         private readonly ILogger<DartOrchestrator> _logger;
         private readonly Config _config;
+        private readonly IHostApplicationLifetime _lifetime;
 
         private bool IsBlackduckEnabled => _config.FeatureToggles.EnableBlackduckAnalysis;
         private bool IsEolEnabledAndConfigured => _config.FeatureToggles.EnableEOLAnalysis && (_config.EOLAnalysis?.Repositories?.Count > 0);
@@ -30,6 +31,7 @@ namespace DART
                                 ICsvService csvService,
                                 IExcelService excelService,
                                 IEOLAnalysisService eolAnalysisService,
+                                IHostApplicationLifetime lifetime,
                                 ILogger<DartOrchestrator> logger)
         {
             _blackduckReportGenerator = blackduckReportGenerator;
@@ -37,6 +39,7 @@ namespace DART
             _csvService = csvService;
             _excelService = excelService;
             _eolAnalysisService = eolAnalysisService;
+            _lifetime = lifetime;
             _logger = logger;
 
             // Ensure feature toggles are non-null to simplify checks
@@ -117,6 +120,10 @@ namespace DART
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Encountered an exception: {ErrorMessage}", ex.Message);
+            }
+            finally
+            {
+                _lifetime.StopApplication();
             }
         }
 

@@ -22,15 +22,6 @@ namespace DART.Services.Implementation
         {
             _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
             _logger = logger;
-
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the Excel workbook and worksheet for Black Duck Security Risks summary report.
-        /// </summary>
-        private void Initialize()
-        {
             xLWorkbook = new XLWorkbook();
             worksheet = xLWorkbook.Worksheets.Add("Black Duck Security Risks");
             FormatHeader(worksheet);
@@ -151,7 +142,7 @@ namespace DART.Services.Implementation
         /// <param name="workbook">The workbook to save.</param>
         public void SaveWorkbook(IXLWorkbook workbook)
         {
-            workbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"dart-summary-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
+            workbook.SaveAs(Path.Combine(_config.ReportConfiguration.OutputFilePath, $"dart-summary-{Environment.GetEnvironmentVariable("DART_APP_CODE")}-{DateTime.Now:yyyy-MM-dd-HHmmss}.xlsx"));
             _logger.LogInformation("Analysis is completed and report was generated successfully.");
             workbook.Dispose();
         }

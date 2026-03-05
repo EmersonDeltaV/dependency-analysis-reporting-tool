@@ -48,7 +48,8 @@ namespace DART.EOLAnalysis
                             {
                                 Name = repository.Name,
                                 Url = repository.Url,
-                                Branch = repository.Branch
+                                Branch = repository.Branch,
+                                FileSkipFilter = repository.FileSkipFilter
                             };
 
                             // Step 1: Process repository to get project files

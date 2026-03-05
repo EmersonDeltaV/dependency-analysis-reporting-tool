@@ -15,6 +15,7 @@ namespace DART.Services.Implementation
         private readonly ILogger<CsvService> _logger;
         private readonly Config _config;
 
+        private int projectIdIndex;
         private int projectNameIndex;
         private int componentOriginIdIndex;
         private int securityRiskIndex;
@@ -41,6 +42,9 @@ namespace DART.Services.Implementation
         {
             var csvFiles = GetCsvFiles();
 
+            var latestVersion = await _blackduckApiService.GetLatestProjectVersion(_config.BlackduckConfiguration);
+            var configVersions = _config.BlackduckConfiguration.BlackduckRepositories.ToDictionary(r => r.Id, r => r.Versions);
+
             foreach (var csvFile in csvFiles)
             {
                 var csvData = File.ReadAllLines(csvFile);
@@ -55,14 +59,16 @@ namespace DART.Services.Implementation
 
                 for (int i = 1; i < csvData.Length; i++)
                 {
-                    var rowDetails = ExtractRowDetails(csvData[i]);
+                    var rowDetails = ExtractRowDetails(csvData[i], latestVersion, configVersions);
 
                     if (rowDetails == null)
                     {
                         continue;
                     }
 
-                    var recommendedFix = await _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, rowDetails.VulnerabilityId);
+                    var recommendedFix = _config.BlackduckConfiguration.IncludeRecommendedFix
+                        ? (await _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, rowDetails.VulnerabilityId))
+                        : "N/A";
 
                     rowDetails.RecommendedFix = recommendedFix;
 
@@ -95,6 +101,7 @@ namespace DART.Services.Implementation
 
         private bool FindHeaderIndex(string[] headers)
         {
+            projectIdIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.ProjectId, StringComparison.OrdinalIgnoreCase));
             projectNameIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.ProjectName, StringComparison.OrdinalIgnoreCase));
             componentOriginIdIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.ComponentOriginId, StringComparison.OrdinalIgnoreCase));
             securityRiskIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.SecurityRisk, StringComparison.OrdinalIgnoreCase));
@@ -102,16 +109,15 @@ namespace DART.Services.Implementation
             matchTypeIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.MatchType, StringComparison.OrdinalIgnoreCase));
             versionIndex = Array.FindIndex(headers, x => x.Equals(BlackduckCSVHeaders.Version, StringComparison.OrdinalIgnoreCase));
 
-            return projectNameIndex != -1 && componentOriginIdIndex != -1 && securityRiskIndex != -1 && vulnerabilityIdIndex != -1;
+            return projectIdIndex != -1 && projectNameIndex != -1 && componentOriginIdIndex != -1 && securityRiskIndex != -1 && vulnerabilityIdIndex != -1;
         }
 
-        private RowDetails? ExtractRowDetails(string csvRowData)
+        private RowDetails? ExtractRowDetails(string csvRowData, Dictionary<string, string> latestVersions, Dictionary<string, string> configVersions)
         {
             var parsedRow = ParseCsvRow(csvRowData);
             var matchType = parsedRow[matchTypeIndex];
             var version = parsedRow[versionIndex];
-
-            var versions = _config.BlackduckConfiguration.ProjectVersionsToInclude.Split(',');
+            var projectId = parsedRow[projectIdIndex];
 
             if (!_config.BlackduckConfiguration.IncludeTransitiveDependency &&
                 matchType.Equals("Transitive Dependency", StringComparison.OrdinalIgnoreCase))
@@ -119,7 +125,15 @@ namespace DART.Services.Implementation
                 return null;
             }
 
-            if (!versions.Contains(string.Empty) && !versions.Contains(version))
+            var requestedVersions = configVersions.TryGetValue(projectId, out var versionsString)
+                ? versionsString.Split(',').Select(v => v.Trim().ToLowerInvariant()).ToArray()
+                : [];
+            
+            var latestVersion = latestVersions.TryGetValue(projectId, out var latest) ? latest : string.Empty;
+
+            if (!(requestedVersions.Contains(string.Empty) ||
+                requestedVersions.Contains(version.ToLowerInvariant(), StringComparer.OrdinalIgnoreCase) ||
+                (requestedVersions.Contains("<latest>") && version.Equals(latestVersion, StringComparison.OrdinalIgnoreCase))))
             {
                 _logger.LogInformation($"This row with version {version} does not match the required version. Skipping this row.");
                 return null;

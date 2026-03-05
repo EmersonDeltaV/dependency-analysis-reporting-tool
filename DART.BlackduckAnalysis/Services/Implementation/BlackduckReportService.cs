@@ -59,7 +59,7 @@ namespace DART.BlackduckAnalysis
             while (!isComplete && statusTryCount < maxTries)
             {
                 await Task.Delay(pollingDelayMs);
-                isComplete = await blackduckApiService.GetVulnerabilityStatusReportCompleteStatus(config, reportId);
+                isComplete = await blackduckApiService.GetVulnerabilityStatusReportStatus(config, reportId);
                 statusTryCount++;
             }
 

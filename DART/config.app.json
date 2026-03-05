@@ -1,0 +1,33 @@
+{
+  "ReportConfiguration": {
+    "ProductName": "Meta Project",
+    "ProductVersion": "0.x",
+    "ProductIteration": "PI xx"
+  },
+  "BlackduckConfiguration": {
+    "BlackduckRepositories": [
+      {
+        "Name": "read-service",
+        "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "Versions": "<latest>"
+      },
+      {
+        "Name": "central-postgres",
+        "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "Versions": "trunk-v1"
+      }
+    ]
+  },
+  "EOLAnalysis": {
+    "Repositories": [
+      {
+        "Name": "Repository",
+        "Url": "https://dev.azure.com/Organization/Project/_git/Repository",
+        "Branch": "main",
+        "FileSkipFilter": [
+          "TestService"
+        ]
+      }
+    ]
+  }
+}

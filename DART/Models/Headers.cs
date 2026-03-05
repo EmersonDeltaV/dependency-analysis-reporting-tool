@@ -24,6 +24,7 @@
     /// </summary>
     public static class BlackduckCSVHeaders
     {
+        public const string ProjectId = "Project id";
         public const string ProjectName = "Project name";
         public const string ComponentOriginId = "Component origin id";
         public const string SecurityRisk = "Security Risk";

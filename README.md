@@ -47,18 +47,20 @@ Navigate to the `DART/config.json` file and configure the following core setting
 "BlackduckConfiguration": {
   "BaseUrl": "https://blackduck.emrsn.org",
   "Token": "your-blackduck-token",
-  "IncludeTransitiveDependency": "true",
-  "ProjectVersionsToInclude": "main",
+  "IncludeTransitiveDependency": true,
+  "IncludeRecommendedFix": true,
   "PreviousResults": "",
   "CurrentResults": "",
   "BlackduckRepositories": [
     {
-      "Name": "ProjectX",
-      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "Name": "Project_Name1",
+      "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "Versions": "<latest>,trunk-153214"
     },
     {
-      "Name": "ProjectX",
-      "Url": "https://blackduck.emrsn.org/api/projects/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "Name": "Project_Name2",
+      "Id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "Versions": "trunk-v1"
     }
   ],
   "DownloadParameters": {
@@ -97,9 +99,12 @@ Navigate to the `DART/config.json` file and configure the following core setting
     "NuGetApiUrl": "https://api.nuget.org/v3/index.json",
     "Repositories": [
       {
-        "Name": "ProjectName",
-        "Url": "https://dev.azure.com/org/project/_git/repository",
-        "Branch": "main"
+        "Name": "Repository",
+        "Url": "https://dev.azure.com/Organization/Project/_git/Repository",
+        "Branch": "nebula/v1",
+        "FileSkipFilter": [
+          "TestService"
+        ]
       }
     ],
     "PackageRecommendation": {
@@ -121,7 +126,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
 }
 ```
 
-- SkipInternalPackagesFilter: Optional wildcard patterns (supports `*` and `?`) used to mark packages by Id as internal/skipped. Matching packages remain in results with the Recommended Action set to `Messages.SkipInternal`.
+- `SkipInternalPackagesFilter`: Optional wildcard patterns (supports `*` and `?`) used to mark packages by Id as internal/skipped. Matching packages remain in results with the Recommended Action set to `Messages.SkipInternal`.
+- `FileSkipFilter`: Optional list of file paths (e.g., "src/legacy/", "tests/") to exclude from analysis. If a repository file path contains any of these patterns, it will be skipped during EOL analysis.
 
 ## Troubleshooting
 

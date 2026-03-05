@@ -111,9 +111,17 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
+            if (config.BlackduckRepositories == null || config.BlackduckRepositories.Count == 0)
+            {
+                _logger.LogWarning("No Blackduck repositories configured for vulnerability status report.");
+                return false;
+            }
+
+            _logger.LogInformation($"Creating vulnerability status report for {config.BlackduckRepositories.Count} repositories.");
+
             var apiPayload = new
             {
-                projects = config.BlackduckRepositories?.Select(p => p.Url).ToList() ?? new List<string>(),
+                projects = config.BlackduckRepositories?.Select(p => $"{config.BaseUrl}/api/projects/{p.Id}").ToList() ?? new List<string>(),
                 reportFormat = "CSV"
             };
 
@@ -165,7 +173,7 @@ namespace DART.BlackduckAnalysis
             return latestReportId;
         }
 
-        public async Task<bool> GetVulnerabilityStatusReportCompleteStatus(BlackduckConfiguration config, string reportId)
+        public async Task<bool> GetVulnerabilityStatusReportStatus(BlackduckConfiguration config, string reportId)
         {
             if (string.IsNullOrEmpty(config.BaseUrl))
             {
@@ -198,7 +206,7 @@ namespace DART.BlackduckAnalysis
             var report = reportEntry?.Item;
             var status = report?["status"]?.ToString() ?? report?["complete"]?.ToString();
 
-            _logger.LogInformation($"GetVulnerabilityStatusReportCompleteStatus Id: {reportEntry?.Id ?? string.Empty}; Status: {status ?? "Unknown"}");
+            _logger.LogInformation($"GetVulnerabilityStatusReportStatus Id: {reportEntry?.Id ?? string.Empty}; Status: {status ?? "Unknown"}");
 
             return VulnerabilityReportParser.IsReportComplete(report);
         }
@@ -241,6 +249,48 @@ namespace DART.BlackduckAnalysis
 
             return filePath;
 
+        }
+
+        public async Task<Dictionary<string, string>> GetLatestProjectVersion(BlackduckConfiguration config)
+        {
+            if (string.IsNullOrEmpty(config.BaseUrl))
+            {
+                throw new InvalidOperationException("BlackduckConfiguration:BaseUrl is not configured. Please check your config.json file.");
+            }
+
+            using var httpClient = CreateClient(config.BaseUrl);
+            await EnsureBearerTokenConfigured(httpClient, config);
+
+            httpClient.DefaultRequestHeaders.Remove("Accept");
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.internal-1+json");
+
+            var projectVersions = new Dictionary<string, string>();
+
+            foreach (var repo in config.BlackduckRepositories)
+            {
+                var sortQuery = Uri.EscapeDataString("lastScanDate desc");
+                var response = await httpClient.GetAsync($"api/projects/{repo.Id}/versions?limit=1&offset=0&sort={sortQuery}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    var content_ = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"Error getting project version for {repo.Name} ({repo.Id}): {content_}");
+                    continue;
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                var jsonContent = JObject.Parse(content);
+                var versions = jsonContent["items"] as JArray;
+
+                var latestVersion = versions?
+                    .OrderByDescending(v => v?["lastScanDate"])
+                    .FirstOrDefault()?["versionName"]?.ToString() ?? string.Empty;
+
+                projectVersions[repo.Id] = latestVersion;
+
+                _logger.LogInformation($"Latest version for {repo.Name} ({repo.Id}) is {latestVersion}");
+            }
+
+            return projectVersions;
         }
     }
 }

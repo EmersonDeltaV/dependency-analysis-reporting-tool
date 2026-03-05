@@ -32,13 +32,20 @@ namespace DART.EOLAnalysis.Services
             }
         }
 
+        private static readonly string[] DateFormats = ["MM/dd/yyyy", "MM-dd-yyyy", "yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy"];
+
+        private static DateTime ParseDate(string date)
+        {
+            return DateTime.ParseExact(date, DateFormats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None);
+        }
+
         private string DetermineActionForOldPackage(PackageData package)
         {
             var defaultAction = _config!.Messages.OldPackageDefault;
 
             if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
-                if (DateTime.Parse(package.LatestVersionDate) > DateTime.Parse(package.VersionDate))
+                if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
                 {
                     return _config!.Messages.UpdateToNewer;
                 }
@@ -60,7 +67,7 @@ namespace DART.EOLAnalysis.Services
         {
             if (!string.IsNullOrEmpty(package.LatestVersionDate) && !string.IsNullOrEmpty(package.VersionDate))
             {
-                if (DateTime.Parse(package.LatestVersionDate) > DateTime.Parse(package.VersionDate))
+                if (ParseDate(package.LatestVersionDate) > ParseDate(package.VersionDate))
                 {
                     return _config!.Messages.NearEolUpdate;
                 }

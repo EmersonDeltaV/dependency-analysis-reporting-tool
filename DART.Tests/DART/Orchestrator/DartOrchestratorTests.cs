@@ -5,6 +5,7 @@ using DART.EOLAnalysis.Models;
 using DART.Exceptions;
 using DART.Models;
 using DART.Services.Interfaces;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -17,28 +18,20 @@ namespace DART.Tests.DART.Orchestrator
         private readonly ICsvService _mockCsvService;
         private readonly IExcelService _mockExcelService;
         private readonly IEOLAnalysisService _mockEOLAnalysisService;
+        private readonly IHostApplicationLifetime _mockLifetime;
         private readonly ILogger<DartOrchestrator> _mockLogger;
-
-        private readonly TextReader _originalConsoleIn;
 
         public DartOrchestratorTests()
         {
-            // Prevent Console.ReadLine() in StartAsync from blocking tests
-            _originalConsoleIn = Console.In;
-            Console.SetIn(new StringReader(Environment.NewLine));
-
             _mockBlackduckReportGenerator = Substitute.For<IBlackduckReportGenerator>();
             _mockCsvService = Substitute.For<ICsvService>();
             _mockExcelService = Substitute.For<IExcelService>();
             _mockEOLAnalysisService = Substitute.For<IEOLAnalysisService>();
+            _mockLifetime = Substitute.For<IHostApplicationLifetime>();
             _mockLogger = Substitute.For<ILogger<DartOrchestrator>>();
         }
 
-        public void Dispose()
-        {
-            // Restore original Console.In after tests
-            Console.SetIn(_originalConsoleIn);
-        }
+        public void Dispose() { }
 
         private Config CreateDefaultConfig()
         {
@@ -104,6 +97,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
+                _mockLifetime,
                 _mockLogger);
         }
 
@@ -470,6 +464,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
+                _mockLifetime,
                 _mockLogger));
 
             Assert.Equal("Failed to load configuration", exception.Message);
@@ -683,11 +678,11 @@ namespace DART.Tests.DART.Orchestrator
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
+                _mockLifetime,
                 _mockLogger));
 
             Assert.Contains("Configuration validation failed", exception.Message);
             
-            Assert.Contains("OutputFilePath is required", exception.Message);
             Assert.Contains("BaseUrl is required", exception.Message);
             Assert.Contains("BlackduckConfiguration:Token is required", exception.Message);
             Assert.Contains("ProductName is required", exception.Message);
@@ -708,6 +703,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
+                _mockLifetime,
                 _mockLogger);
 
             Assert.NotNull(program);
@@ -718,7 +714,7 @@ namespace DART.Tests.DART.Orchestrator
         {
             // Arrange
             var config = CreateDefaultConfig();
-            config.FeatureToggles = null;
+            config.FeatureToggles = null!;
             var configOptions = Options.Create(config);
 
             // Act & Assert - Should not throw, should create default FeatureToggles
@@ -728,6 +724,7 @@ namespace DART.Tests.DART.Orchestrator
                 _mockCsvService,
                 _mockExcelService,
                 _mockEOLAnalysisService,
+                _mockLifetime,
                 _mockLogger);
 
             Assert.NotNull(program);

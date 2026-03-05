@@ -26,9 +26,9 @@ namespace DART.BlackduckAnalysis
         public bool IncludeTransitiveDependency { get; set; }
 
         /// <summary>
-        /// Comma-separated list of project versions to include
+        /// Include recommended fixes in CSV processing
         /// </summary>
-        public string ProjectVersionsToInclude { get; set; } = string.Empty;
+        public bool IncludeRecommendedFix { get; set; }
 
         /// <summary>
         /// Path to previous DART scan result file for comparison
@@ -64,9 +64,14 @@ namespace DART.BlackduckAnalysis
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
-        /// BlackDuck API URL for this repository/project
+        /// BlackDuck ID for this repository/project
         /// </summary>
-        public string Url { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Comma-separated list of project versions to include in the report
+        /// </summary>
+        public string Versions { get; set; } = string.Empty;
     }
 
     /// <summary>

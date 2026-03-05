@@ -54,11 +54,14 @@ namespace DART.EOLAnalysis.Clients
                     PropertyNameCaseInsensitive = true,
                 });
 
+                var filters = repo.FileSkipFilter.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
                 // Filter for .csproj files
                 return fileList?.Value
                     .Where(item => item.GitObjectType == "blob"
                                 && item.Path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-                                && !item.Path.Contains("UnitTests", StringComparison.OrdinalIgnoreCase))
+                                && !item.Path.Contains("UnitTests", StringComparison.OrdinalIgnoreCase)
+                                && !filters.Any(filter => item.Path.Contains(filter, StringComparison.OrdinalIgnoreCase)))
                     .ToList() ?? new List<GitItem>();
             }
             catch (JsonException ex)
