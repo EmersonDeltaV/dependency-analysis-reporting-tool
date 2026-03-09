@@ -10,6 +10,7 @@ namespace DART.Services.Interfaces
         void PopulateRow(RowDetails rowDetails);
         void SaveReport();
         void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData);
+        void AddEOLAnalysisSheet(IXLWorkbook workbook, List<PackageData> eolData, string sheetName);
         IXLWorkbook GetWorkbook();
         void SaveWorkbook(IXLWorkbook workbook);
     }

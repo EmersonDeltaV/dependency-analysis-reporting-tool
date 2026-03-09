@@ -9,83 +9,76 @@ namespace DART.EOLAnalysis
     {
         private readonly ILogger<EOLAnalysisService> _logger;
         private readonly INugetMetadataService _nugetMetadata;
+        private readonly INpmMetadataService _npmMetadata;
         private readonly IAzureDevOpsClientFactory _azureDevOpsClientFactory;
         private readonly IRepositoryProcessorService _repositoryProcessor;
         private readonly IProjectAnalysisService _projectAnalysis;
 
         public EOLAnalysisService(ILogger<EOLAnalysisService> logger,
                                   INugetMetadataService nugetMetadata,
+                                  INpmMetadataService npmMetadata,
                                   IAzureDevOpsClientFactory azureDevOpsClientFactory,
                                   IRepositoryProcessorService repositoryProcessor,
                                   IProjectAnalysisService projectAnalysis)
         {
             _logger = logger;
             _nugetMetadata = nugetMetadata;
+            _npmMetadata = npmMetadata;
             _azureDevOpsClientFactory = azureDevOpsClientFactory;
             _repositoryProcessor = repositoryProcessor;
             _projectAnalysis = projectAnalysis;
         }
 
-        public async Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, CancellationToken cancellationToken = default)
+        public async Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, FeatureToggles toggles, CancellationToken cancellationToken = default)
         {
             var results = new List<PackageData>();
 
+            if (!toggles.EnableCSharpAnalysis && !toggles.EnableNpmAnalysis)
+            {
+                _logger.LogInformation("No ecosystems enabled, skipping EOL analysis.");
+                return results;
+            }
+
             try
             {
-                // Initialize NuGet metadata service with configured API URL
-                _nugetMetadata.Initialize(config.NuGetApiUrl);
+                if (toggles.EnableCSharpAnalysis)
+                    _nugetMetadata.Initialize(config.NuGetApiUrl);
 
-                // Create Azure DevOps client with PAT from config
-                using (var azureClient = _azureDevOpsClientFactory.CreateClient(config.Pat))
+                if (toggles.EnableNpmAnalysis)
+                    _npmMetadata.Initialize(config.NpmRegistryUrl);
+
+                using var azureClient = _azureDevOpsClientFactory.CreateClient(config.Pat);
+
+                foreach (var repository in config.Repositories)
                 {
-                    // Process each repository
-                    foreach (var repository in config.Repositories)
+                    try
                     {
-                        try
+                        var projectInfos = await _repositoryProcessor.ProcessRepositoryAsync(
+                            repository, azureClient, config, toggles, cancellationToken);
+
+                        foreach (var projectInfo in projectInfos)
                         {
-                            // Create internal Repository instance for processing
-                            var internalRepo = new Repository
+                            try
                             {
-                                Name = repository.Name,
-                                Url = repository.Url,
-                                Branch = repository.Branch,
-                                FileSkipFilter = repository.FileSkipFilter
-                            };
-
-                            // Step 1: Process repository to get project files
-                            var projectInfos = await _repositoryProcessor.ProcessRepositoryAsync(internalRepo, azureClient, cancellationToken);
-
-                            // Step 2: Analyze each project to get package data
-                            foreach (var projectInfo in projectInfos)
+                                var packages = await _projectAnalysis.AnalyzeProjectAsync(
+                                    projectInfo, config, toggles, cancellationToken);
+                                results.AddRange(packages);
+                            }
+                            catch (Exception ex)
                             {
-                                try
-                                {
-                                    var packageDataList = await _projectAnalysis.AnalyzeProjectAsync(
-                                        projectInfo,
-                                        config.PackageRecommendation,
-                                        cancellationToken);
-
-                                    // Step 3: Add package data to results
-                                    results.AddRange(packageDataList);
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "Failed to analyze project {ProjectName} in repository {RepositoryName}: {ErrorMessage}",
-                                        projectInfo.Name, repository.Name, ex.Message);
-                                    // Continue processing other projects
-                                }
+                                _logger.LogWarning(ex, "Failed to analyze project {ProjectName} ({ProjectType}) in repository {RepositoryName}: {ErrorMessage}",
+                                    projectInfo.Name, projectInfo.ProjectType, repository.Name, ex.Message);
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "Failed to process repository {RepositoryName}: {ErrorMessage}",
-                                repository.Name, ex.Message);
-                            // Continue processing other repositories
-                        }
                     }
-
-                    _logger.LogInformation("EOL analysis completed. Analyzed {PackageCount} packages", results.Count);
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to process repository {RepositoryName}: {ErrorMessage}",
+                            repository.Name, ex.Message);
+                    }
                 }
+
+                _logger.LogInformation("EOL analysis completed. Analyzed {PackageCount} packages", results.Count);
             }
             catch (Exception ex)
             {

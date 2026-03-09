@@ -31,11 +31,16 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             // Arrange
             var (svc, nuget, rec, _) = CreateService();
-            var config = new PackageRecommendationConfig
+            var packageConfig = new PackageRecommendationConfig
             {
                 // Lowercase pattern to validate case-insensitive matching, and '*' wildcard
                 SkipInternalPackagesFilter = new List<string> { "  ", "emerson.uti*  " },
                 Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
             };
 
             rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
@@ -43,7 +48,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Util", "1.2.3"), ("Emerson.Utility", "2.0.0"), ("Other", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             // emerson.uti? should match both Util and Utility (case-insensitive, '?' wildcard)
@@ -65,8 +70,9 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             var logger = Substitute.For<ILogger<ProjectAnalysisService>>();
             var nuget = Substitute.For<INugetMetadataService>();
+            var npm = Substitute.For<INpmMetadataService>();
             var rec = Substitute.For<IPackageRecommendationService>();
-            var svc = new ProjectAnalysisService(logger, nuget, rec);
+            var svc = new ProjectAnalysisService(logger, nuget, npm, rec);
             return (svc, nuget, rec, logger);
         }
 
@@ -75,10 +81,15 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             // Arrange
             var (svc, nuget, rec, _) = CreateService();
-            var config = new PackageRecommendationConfig
+            var packageConfig = new PackageRecommendationConfig
             {
                 SkipInternalPackagesFilter = new List<string> { "Emerson.*" },
                 Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
             };
 
             // For non-internal packages, DetermineAction returns a value
@@ -87,7 +98,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -99,7 +110,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             await nuget.DidNotReceive().GetDataAsync(Arg.Is<PackageData>(p => p.Id == "Emerson.Core"), Arg.Any<CancellationToken>());
             await nuget.Received(1).GetDataAsync(Arg.Is<PackageData>(p => p.Id == "Newtonsoft.Json"), Arg.Any<CancellationToken>());
 
-            rec.Received(1).Initialize(config);
+            rec.Received(1).Initialize(packageConfig);
             rec.Received(1).DetermineAction(Arg.Is<PackageData>(p => p.Id == "Newtonsoft.Json"));
             rec.DidNotReceive().DetermineAction(Arg.Is<PackageData>(p => p.Id == "Emerson.Core"));
         }
@@ -109,10 +120,15 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             // Arrange
             var (svc, nuget, rec, _) = CreateService();
-            var config = new PackageRecommendationConfig
+            var packageConfig = new PackageRecommendationConfig
             {
                 SkipInternalPackagesFilter = new List<string>(),
                 Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
             };
 
             rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
@@ -120,7 +136,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -128,7 +144,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             await nuget.Received(1).GetDataAsync(Arg.Is<PackageData>(p => p.Id == "Emerson.Core"), Arg.Any<CancellationToken>());
             await nuget.Received(1).GetDataAsync(Arg.Is<PackageData>(p => p.Id == "Newtonsoft.Json"), Arg.Any<CancellationToken>());
 
-            rec.Received(1).Initialize(config);
+            rec.Received(1).Initialize(packageConfig);
             rec.Received(2).DetermineAction(Arg.Any<PackageData>());
 
             // None should be marked with INTERNAL skip message
@@ -140,18 +156,22 @@ namespace DART.Tests.DART.EOLAnalysis.Services
         {
             // Arrange
             var (svc, nuget, rec, _) = CreateService();
-            var config = new PackageRecommendationConfig
+            var packageConfig = new PackageRecommendationConfig
             {
                 SkipInternalPackagesFilter = null!,
                 Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
             };
 
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
+            };
             rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
 
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Single(result);

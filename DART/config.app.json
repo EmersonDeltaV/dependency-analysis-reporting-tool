@@ -25,7 +25,8 @@
         "Url": "https://dev.azure.com/Organization/Project/_git/Repository",
         "Branch": "main",
         "FileSkipFilter": [
-          "TestService"
+          "TestService",
+          "TestAngularApp"
         ]
       }
     ]

@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
+using DART.EOLAnalysis.Models;
 using DART.Exceptions;
 using DART.Models;
 using DART.Services.Interfaces;
@@ -21,7 +22,9 @@ namespace DART
         private readonly IHostApplicationLifetime _lifetime;
 
         private bool IsBlackduckEnabled => _config.FeatureToggles.EnableBlackduckAnalysis;
-        private bool IsEolEnabledAndConfigured => _config.FeatureToggles.EnableEOLAnalysis && (_config.EOLAnalysis?.Repositories?.Count > 0);
+        private bool IsAnyEolEnabledAndConfigured =>
+            (_config.FeatureToggles.EnableCSharpAnalysis || _config.FeatureToggles.EnableNpmAnalysis)
+            && (_config.EOLAnalysis?.Repositories?.Count > 0);
         private bool HasBothBlackduckResults =>
             !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) &&
             !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults);
@@ -140,7 +143,7 @@ namespace DART
 
         private async Task RunEolOnlyFlowAsync(CancellationToken cancellationToken)
         {
-            if (!IsEolEnabledAndConfigured)
+            if (!IsAnyEolEnabledAndConfigured)
                 return;
 
             var workbook = _excelService.GetWorkbook();
@@ -150,27 +153,28 @@ namespace DART
 
         private async Task RunEolAnalysisAsync(IXLWorkbook workbook, CancellationToken cancellationToken)
         {
-            if (IsEolEnabledAndConfigured)
-            {
-                try
-                {
-                    _logger.LogInformation("Starting EOL Analysis...");
-                    var eolData = await _eolAnalysisService.AnalyzeRepositoriesAsync(_config.EOLAnalysis, cancellationToken);
+            if (!IsAnyEolEnabledAndConfigured)
+                return;
 
-                    if (eolData != null && eolData.Count > 0)
-                    {
-                        _excelService.AddEOLAnalysisSheet(workbook, eolData);
-                        _logger.LogInformation("EOL Analysis completed. Found {PackageCount} packages.", eolData.Count);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("EOL Analysis completed but no packages were found.");
-                    }
-                }
-                catch (Exception ex)
+            try
+            {
+                _logger.LogInformation("Starting EOL Analysis...");
+
+                var eolData = await _eolAnalysisService.AnalyzeRepositoriesAsync(_config.EOLAnalysis, _config.FeatureToggles, cancellationToken);
+
+                if (eolData != null && eolData.Count > 0)
                 {
-                    _logger.LogError(ex, "EOL Analysis failed: {ErrorMessage}", ex.Message);
+                    _excelService.AddEOLAnalysisSheet(workbook, eolData);
+                    _logger.LogInformation("EOL Analysis completed. Found {PackageCount} packages.", eolData.Count);
                 }
+                else
+                {
+                    _logger.LogInformation("EOL Analysis completed but no packages were found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "EOL Analysis failed: {ErrorMessage}", ex.Message);
             }
         }
 

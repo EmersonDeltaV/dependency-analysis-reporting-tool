@@ -1,4 +1,4 @@
-﻿using DART.BlackduckAnalysis;
+using DART.BlackduckAnalysis;
 using DART.EOLAnalysis.Models;
 
 namespace DART.Models
@@ -34,10 +34,5 @@ namespace DART.Models
         public string ProductName { get; set; } = string.Empty;
         public string ProductVersion { get; set; } = string.Empty;
         public string ProductIteration { get; set; } = string.Empty;
-    }
-    public class FeatureToggles
-    {
-        public bool EnableBlackduckAnalysis { get; set; } = true;
-        public bool EnableEOLAnalysis { get; set; } = true;
     }
 }
