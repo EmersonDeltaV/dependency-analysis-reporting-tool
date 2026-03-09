@@ -20,9 +20,14 @@ namespace DART.EOLAnalysis.Models
         public PackageRecommendationConfig PackageRecommendation { get; set; } = new PackageRecommendationConfig();
 
         /// <summary>
-        /// Maximum degree of parallelism for API calls when fetching recommended fixes. Adjust based on expected number of vulnerabilities and API rate limits. Defaults to 10.
+        /// Maximum degree of parallelism for consumers on a bounded channel. Defaults to 10.
         /// </summary>
         public int MaxConcurrency { get; set; } = 10;
+
+        /// <summary>
+        /// Channel capacity for bounded channel used in I/O operations. This limits the number of items buffered in memory for processing. Defaults to 10.
+        /// </summary>
+        public int BoundedCapacity { get; set; } = 10;
     }
 
     public class FeatureToggles

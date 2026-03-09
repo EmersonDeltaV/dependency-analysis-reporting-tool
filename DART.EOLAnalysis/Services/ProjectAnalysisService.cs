@@ -171,8 +171,7 @@ namespace DART.EOLAnalysis.Services
             string metadataSource,
             CancellationToken cancellationToken)
         {
-            int boundedCapacity = config.MaxConcurrency;
-            var channel = Channel.CreateBounded<(string Id, string Version)>(boundedCapacity);
+            var channel = Channel.CreateBounded<(string Id, string Version)>(config.BoundedCapacity);
             var results = new ConcurrentBag<PackageData>();
 
             // Producer: enqueue all packages; skipped ones are handled inline before writing
@@ -207,8 +206,8 @@ namespace DART.EOLAnalysis.Services
                 }
             }, cancellationToken);
 
-            // Consumers: up to boundedCapacity parallel metadata fetches
-            var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+            // Consumers: up to config.MaxConcurrency parallel metadata fetches
+            var consumers = Enumerable.Range(0, config.MaxConcurrency).Select(_ => Task.Run(async () =>
             {
                 await foreach (var (id, version) in channel.Reader.ReadAllAsync(cancellationToken))
                 {

@@ -67,7 +67,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
     "MaxTries": 20,
     "PollingDelayMilliseconds": 5000
   },
-  "MaxConcurrency": 10
+  "MaxConcurrency": 10,
+  "BoundedCapacity": 10
 },
 ```
 
@@ -127,7 +128,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
         "SkipInternal": "Skip. Internal package"
       }
     },
-    "MaxConcurrency": 10
+    "MaxConcurrency": 10,
+    "BoundedCapacity": 10
   }
 }
 ```

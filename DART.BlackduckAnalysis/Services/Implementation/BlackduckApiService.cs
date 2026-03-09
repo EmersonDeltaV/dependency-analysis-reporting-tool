@@ -266,8 +266,7 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.internal-1+json");
 
-            int boundedCapacity = config.MaxConcurrency;
-            var channel = Channel.CreateBounded<BlackduckRepository>(boundedCapacity);
+            var channel = Channel.CreateBounded<BlackduckRepository>(config.BoundedCapacity);
             var projectVersions = new ConcurrentDictionary<string, string>();
 
             // Producer: write all repos into the channel
@@ -284,8 +283,8 @@ namespace DART.BlackduckAnalysis
                 }
             });
 
-            // Consumers: up to boundedCapacity parallel HTTP calls
-            var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+            // Consumers: up to config.MaxConcurrency parallel HTTP calls
+            var consumers = Enumerable.Range(0, config.MaxConcurrency).Select(_ => Task.Run(async () =>
             {
                 await foreach (var repo in channel.Reader.ReadAllAsync())
                 {

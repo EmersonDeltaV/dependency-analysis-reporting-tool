@@ -81,8 +81,7 @@ namespace DART.EOLAnalysis.Services
             if (gitItems == null || gitItems.Count == 0)
                 return [];
 
-            int boundedCapacity = config.MaxConcurrency;
-            var channel = Channel.CreateBounded<GitItem>(boundedCapacity);
+            var channel = Channel.CreateBounded<GitItem>(config.BoundedCapacity);
             var projectInfos = new System.Collections.Concurrent.ConcurrentBag<ProjectInfo>();
 
             // Producer: write all git items into the channel
@@ -99,8 +98,8 @@ namespace DART.EOLAnalysis.Services
                 }
             }, cancellationToken);
 
-            // Consumers: spin up bounded-capacity parallel consumers
-            var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+            // Consumers: spin up config.MaxConcurrency parallel consumers
+            var consumers = Enumerable.Range(0, config.MaxConcurrency).Select(_ => Task.Run(async () =>
             {
                 await foreach (var gitItem in channel.Reader.ReadAllAsync(cancellationToken))
                 {

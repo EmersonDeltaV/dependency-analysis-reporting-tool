@@ -79,8 +79,7 @@ namespace DART.Services.Implementation
                 // Fetch recommended fixes in parallel using a bounded channel of size 10
                 if (_config.BlackduckConfiguration.IncludeRecommendedFix)
                 {
-                    int boundedCapacity = _config.BlackduckConfiguration.MaxConcurrency;
-                    var channel = Channel.CreateBounded<RowDetails>(boundedCapacity);
+                    var channel = Channel.CreateBounded<RowDetails>(_config.BlackduckConfiguration.BoundedCapacity);
 
                     var producer = Task.Run(async () =>
                     {
@@ -95,7 +94,7 @@ namespace DART.Services.Implementation
                         }
                     });
 
-                    var consumers = Enumerable.Range(0, boundedCapacity).Select(_ => Task.Run(async () =>
+                    var consumers = Enumerable.Range(0, _config.BlackduckConfiguration.MaxConcurrency).Select(_ => Task.Run(async () =>
                     {
                         await foreach (var row in channel.Reader.ReadAllAsync())
                         {
