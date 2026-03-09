@@ -38,7 +38,7 @@ Navigate to the `DART/config.json` file and configure the following core setting
     "ProductName": "ProductX",
     "ProductVersion": "v1.1",
     "ProductIteration": "PIXX"
-    },
+}
 ```
 
 ### Black Duck Configuration
@@ -66,7 +66,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
   "DownloadParameters": {
     "MaxTries": 20,
     "PollingDelayMilliseconds": 5000
-  }
+  },
+  "MaxConcurrency": 10
 },
 ```
 
@@ -75,20 +76,24 @@ Navigate to the `DART/config.json` file and configure the following core setting
 ```json
 {
   "FeatureToggles": {
-    "EnableEOLAnalysis": true,
-    "EnableBlackduckAnalysis": true
+    "EnableBlackduckAnalysis": true,
+    "EnableCSharpAnalysis": true,
+    "EnableNpmAnalysis": true,
+    "IncludeNpmDevDependencies": false
   }
 }
 ```
 
 - EnableBlackduckAnalysis: When true, runs all Black Duck download, processing, and comparison steps. When false, Black Duck steps are skipped. Defaults to true. Black Duck configuration is only required when this is true.
-- EnableEOLAnalysis: When true, adds an EOL analysis sheet. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
+- EnableCSharpAnalysis: When true, adds an EOL analysis sheet for CSharp projects. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
+- EnableNpmAnalysis: When true, adds an EOL analysis sheet for NPM projects. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
+- IncludeNpmDevDependencies: When true, includes dev dependencies in NPM EOL analysis. Defaults to false.
 
 ### Run Modes
 
-- Black Duck only: `EnableBlackduckAnalysis = true`, `EnableEOLAnalysis = false`
-- EOL only: `EnableBlackduckAnalysis = false`, `EnableEOLAnalysis = true`
-- Both: `EnableBlackduckAnalysis = true`, `EnableEOLAnalysis = true`
+- Black Duck only: `EnableBlackduckAnalysis = true`, `EnableCSharpAnalysis = false`, `EnableNpmAnalysis = false`
+- EOL only: `EnableBlackduckAnalysis = false`, `EnableCSharpAnalysis = true`, `EnableNpmAnalysis = true`
+- Both: `EnableBlackduckAnalysis = true`, `EnableCSharpAnalysis = true`, `EnableNpmAnalysis = true`
 
 ### EOL Analysis Configuration
 
@@ -121,7 +126,8 @@ Navigate to the `DART/config.json` file and configure the following core setting
         "ToBeDecided": "TBD",
         "SkipInternal": "Skip. Internal package"
       }
-    }
+    },
+    "MaxConcurrency": 10
   }
 }
 ```

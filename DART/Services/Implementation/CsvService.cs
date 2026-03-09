@@ -43,6 +43,12 @@ namespace DART.Services.Implementation
         {
             var csvFiles = GetCsvFiles();
 
+            if (csvFiles.Length == 0)
+            {
+                _logger.LogInformation("No CSV files found to process. Exiting analysis.");
+                return;
+            }
+
             var latestVersion = await _blackduckApiService.GetLatestProjectVersion(_config.BlackduckConfiguration);
             var configVersions = _config.BlackduckConfiguration.BlackduckRepositories.ToDictionary(r => r.Id, r => r.Versions);
 
@@ -73,7 +79,7 @@ namespace DART.Services.Implementation
                 // Fetch recommended fixes in parallel using a bounded channel of size 10
                 if (_config.BlackduckConfiguration.IncludeRecommendedFix)
                 {
-                    const int boundedCapacity = 10;
+                    int boundedCapacity = _config.BlackduckConfiguration.MaxConcurrency;
                     var channel = Channel.CreateBounded<RowDetails>(boundedCapacity);
 
                     var producer = Task.Run(async () =>

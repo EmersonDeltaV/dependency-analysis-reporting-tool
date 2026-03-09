@@ -35,7 +35,7 @@ namespace DART.EOLAnalysis.Clients
                 apiUrl += $"&versionDescriptor.version={repo.Branch}&versionDescriptor.versionType=branch";
             }
 
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
+            using HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
 
             // PAT is invalid or lacks permissions
             if (!response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NonAuthoritativeInformation)
@@ -81,7 +81,7 @@ namespace DART.EOLAnalysis.Clients
                 apiUrl += $"&versionDescriptor.version={repo.Branch}&versionDescriptor.versionType=branch";
             }
 
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
+            using HttpResponseMessage response = await _httpClient.GetAsync(apiUrl, cancellationToken);
 
             if (!response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NonAuthoritativeInformation)
             {
@@ -121,7 +121,7 @@ namespace DART.EOLAnalysis.Clients
         {
             var downloadUrl = $"https://dev.azure.com/{repo.Organization}/{repo.Project}/_apis/git/repositories/{repo.RepositoryName}/items?path={Uri.EscapeDataString(filePath)}&api-version=7.1&$format=octetStream";
 
-            HttpResponseMessage response = await _httpClient.GetAsync(downloadUrl, cancellationToken);
+            using HttpResponseMessage response = await _httpClient.GetAsync(downloadUrl, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {

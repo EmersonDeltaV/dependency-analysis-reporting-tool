@@ -28,7 +28,8 @@
     "DownloadParameters": {
       "MaxTries": 30,
       "PollingDelayMilliseconds": 5000
-    }
+    },
+    "MaxConcurrency": 10
   },
   "EOLAnalysis": {
     "Pat": "<YOUR_PERSONAL_ACCESS_TOKEN>",
@@ -63,7 +64,8 @@
         "ToBeDecided": "TBD",
         "SkipInternal": "Skip. Internal package"
       }
-    }
+    },
+    "MaxConcurrency": 10
   },
   "FeatureToggles": {
     "EnableBlackduckAnalysis": true,

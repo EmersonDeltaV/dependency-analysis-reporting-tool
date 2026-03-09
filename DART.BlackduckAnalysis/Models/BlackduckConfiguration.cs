@@ -51,6 +51,11 @@ namespace DART.BlackduckAnalysis
         /// Download operation parameters
         /// </summary>
         public DownloadParameters DownloadParameters { get; set; } = new();
+
+        /// <summary>
+        /// Maximum degree of parallelism for API calls when fetching recommended fixes. Adjust based on expected number of vulnerabilities and API rate limits. Defaults to 10.
+        /// </summary>
+        public int MaxConcurrency { get; set; } = 10;
     }
 
     /// <summary>

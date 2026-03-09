@@ -27,25 +27,26 @@ namespace DART.EOLAnalysis.Services
 
         public Task<List<PackageData>> AnalyzeProjectAsync(
             ProjectInfo projectInfo,
-            PackageRecommendationConfig recommendationConfig,
+            EOLAnalysisConfig config,
             FeatureToggles toggles,
             CancellationToken cancellationToken = default)
         {
             return projectInfo.ProjectType switch
             {
-                ProjectType.Npm => AnalyzeNpmProjectAsync(projectInfo, recommendationConfig, toggles.IncludeNpmDevDependencies, cancellationToken),
-                _ => AnalyzeCSharpProjectAsync(projectInfo, recommendationConfig, cancellationToken),
+                ProjectType.Npm => AnalyzeNpmProjectAsync(projectInfo, config, toggles.IncludeNpmDevDependencies, cancellationToken),
+                ProjectType.CSharp => AnalyzeCSharpProjectAsync(projectInfo, config, cancellationToken),
+                _ => throw new NotSupportedException($"Unsupported project type: {projectInfo.ProjectType}")
             };
         }
 
         private async Task<List<PackageData>> AnalyzeCSharpProjectAsync(
             ProjectInfo projectInfo,
-            PackageRecommendationConfig recommendationConfig,
+            EOLAnalysisConfig config,
             CancellationToken cancellationToken)
         {
             try
             {
-                _packageRecommendation.Initialize(recommendationConfig);
+                _packageRecommendation.Initialize(config.PackageRecommendation);
 
                 _logger.LogInformation("Analyzing C# project: {ProjectName}", projectInfo.Name);
 
@@ -82,12 +83,12 @@ namespace DART.EOLAnalysis.Services
                     return [];
                 }
 
-                var skipPatterns = NormalizeSkipPatterns(recommendationConfig);
+                var skipPatterns = NormalizeSkipPatterns(config.PackageRecommendation);
 
                 return await ProcessPackagesInParallelAsync(
                     packageList,
                     projectInfo,
-                    recommendationConfig,
+                    config,
                     skipPatterns,
                     async (packageData, ct) =>
                     {
@@ -107,13 +108,13 @@ namespace DART.EOLAnalysis.Services
 
         private async Task<List<PackageData>> AnalyzeNpmProjectAsync(
             ProjectInfo projectInfo,
-            PackageRecommendationConfig recommendationConfig,
+            EOLAnalysisConfig config,
             bool includeDevDependencies,
             CancellationToken cancellationToken)
         {
             try
             {
-                _packageRecommendation.Initialize(recommendationConfig);
+                _packageRecommendation.Initialize(config.PackageRecommendation);
 
                 _logger.LogInformation("Analyzing npm project: {ProjectName} (IncludeDevDependencies: {IncludeDevDependencies})", projectInfo.Name, includeDevDependencies);
 
@@ -138,12 +139,12 @@ namespace DART.EOLAnalysis.Services
                     return [];
                 }
 
-                var skipPatterns = NormalizeSkipPatterns(recommendationConfig);
+                var skipPatterns = NormalizeSkipPatterns(config.PackageRecommendation);
 
                 return await ProcessPackagesInParallelAsync(
                     packageList,
                     projectInfo,
-                    recommendationConfig,
+                    config,
                     skipPatterns,
                     async (packageData, ct) =>
                     {
@@ -164,13 +165,13 @@ namespace DART.EOLAnalysis.Services
         private async Task<List<PackageData>> ProcessPackagesInParallelAsync(
             List<(string Id, string Version)> packageList,
             ProjectInfo projectInfo,
-            PackageRecommendationConfig recommendationConfig,
+            EOLAnalysisConfig config,
             List<string> skipPatterns,
             Func<PackageData, CancellationToken, Task> fetchMetadata,
             string metadataSource,
             CancellationToken cancellationToken)
         {
-            const int boundedCapacity = 10;
+            int boundedCapacity = config.MaxConcurrency;
             var channel = Channel.CreateBounded<(string Id, string Version)>(boundedCapacity);
             var results = new ConcurrentBag<PackageData>();
 
@@ -189,10 +190,10 @@ namespace DART.EOLAnalysis.Services
                                 Repository = projectInfo.RepositoryName,
                                 Project = projectInfo.Name,
                                 Version = package.Version,
-                                Action = recommendationConfig!.Messages.SkipInternal
+                                Action = config.PackageRecommendation.Messages.SkipInternal
                             });
                             _logger.LogInformation("Package {PackageId} in project {ProjectName} marked as '{Action}' due to SkipInternalPackagesFilter",
-                                package.Id, projectInfo.Name, recommendationConfig!.Messages.SkipInternal);
+                                package.Id, projectInfo.Name, config.PackageRecommendation.Messages.SkipInternal);
                         }
                         else
                         {

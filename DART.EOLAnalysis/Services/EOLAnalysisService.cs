@@ -54,14 +54,14 @@ namespace DART.EOLAnalysis
                     try
                     {
                         var projectInfos = await _repositoryProcessor.ProcessRepositoryAsync(
-                            repository, azureClient, toggles, cancellationToken);
+                            repository, azureClient, config, toggles, cancellationToken);
 
                         foreach (var projectInfo in projectInfos)
                         {
                             try
                             {
                                 var packages = await _projectAnalysis.AnalyzeProjectAsync(
-                                    projectInfo, config.PackageRecommendation, toggles, cancellationToken);
+                                    projectInfo, config, toggles, cancellationToken);
                                 results.AddRange(packages);
                             }
                             catch (Exception ex)

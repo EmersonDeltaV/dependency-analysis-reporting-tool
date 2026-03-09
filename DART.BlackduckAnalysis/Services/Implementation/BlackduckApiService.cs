@@ -266,7 +266,7 @@ namespace DART.BlackduckAnalysis
             httpClient.DefaultRequestHeaders.Remove("Accept");
             httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.blackducksoftware.internal-1+json");
 
-            const int boundedCapacity = 10;
+            int boundedCapacity = config.MaxConcurrency;
             var channel = Channel.CreateBounded<BlackduckRepository>(boundedCapacity);
             var projectVersions = new ConcurrentDictionary<string, string>();
 
@@ -290,7 +290,7 @@ namespace DART.BlackduckAnalysis
                 await foreach (var repo in channel.Reader.ReadAllAsync())
                 {
                     var sortQuery = Uri.EscapeDataString("lastScanDate desc");
-                    var response = await httpClient.GetAsync($"api/projects/{repo.Id}/versions?limit=1&offset=0&sort={sortQuery}");
+                    using var response = await httpClient.GetAsync($"api/projects/{repo.Id}/versions?limit=1&offset=0&sort={sortQuery}");
 
                     if (!response.IsSuccessStatusCode)
                     {

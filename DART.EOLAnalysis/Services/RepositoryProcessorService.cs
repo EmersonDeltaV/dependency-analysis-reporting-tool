@@ -17,6 +17,7 @@ namespace DART.EOLAnalysis.Services
         public async Task<List<ProjectInfo>> ProcessRepositoryAsync(
             Repository repository,
             IAzureDevOpsClient azureDevOpsClient,
+            EOLAnalysisConfig config,
             FeatureToggles toggles,
             CancellationToken cancellationToken = default)
         {
@@ -31,7 +32,7 @@ namespace DART.EOLAnalysis.Services
                 if (toggles.EnableCSharpAnalysis)
                 {
                     var csharpProjects = await FindFilesAsync(
-                        repository, azureDevOpsClient,
+                        repository, azureDevOpsClient, config,
                         r => azureDevOpsClient.FindCsProjFilesAsync(r, cancellationToken),
                         ProjectType.CSharp, cancellationToken);
 
@@ -46,7 +47,7 @@ namespace DART.EOLAnalysis.Services
                 if (toggles.EnableNpmAnalysis)
                 {
                     var npmProjects = await FindFilesAsync(
-                        repository, azureDevOpsClient,
+                        repository, azureDevOpsClient, config,
                         r => azureDevOpsClient.FindPackageJsonFilesAsync(r, cancellationToken),
                         ProjectType.Npm, cancellationToken);
 
@@ -70,6 +71,7 @@ namespace DART.EOLAnalysis.Services
         private async Task<List<ProjectInfo>> FindFilesAsync(
             Repository repository,
             IAzureDevOpsClient azureDevOpsClient,
+            EOLAnalysisConfig config,
             Func<Repository, Task<List<GitItem>>> findFiles,
             ProjectType projectType,
             CancellationToken cancellationToken)
@@ -79,7 +81,7 @@ namespace DART.EOLAnalysis.Services
             if (gitItems == null || gitItems.Count == 0)
                 return [];
 
-            const int boundedCapacity = 10;
+            int boundedCapacity = config.MaxConcurrency;
             var channel = Channel.CreateBounded<GitItem>(boundedCapacity);
             var projectInfos = new System.Collections.Concurrent.ConcurrentBag<ProjectInfo>();
 
