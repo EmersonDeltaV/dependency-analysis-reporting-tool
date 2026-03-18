@@ -123,6 +123,11 @@ namespace DART.EOLAnalysis.Clients
 
             using HttpResponseMessage response = await _httpClient.GetAsync(downloadUrl, cancellationToken);
 
+            if (!string.IsNullOrEmpty(repo.Branch))
+            {
+                downloadUrl += $"&versionDescriptor.version={repo.Branch}&versionDescriptor.versionType=branch";
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
