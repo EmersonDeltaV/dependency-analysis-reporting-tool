@@ -24,6 +24,14 @@ namespace DART.EOLAnalysis.Clients
         Task<List<GitItem>> FindPackageJsonFilesAsync(Repository repository, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Finds all Directory.Packages.props files in the specified repository.
+        /// </summary>
+        /// <param name="repository">The repository to search for Directory.Packages.props files.</param>
+        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <returns>A list of Git items representing Directory.Packages.props files found in the repository.</returns>
+        Task<List<GitItem>> FindDirectoryPackagesPropsFilesAsync(Repository repository, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Retrieves the content of a specific file from the repository.
         /// </summary>
         /// <param name="repository">The repository containing the file.</param>
