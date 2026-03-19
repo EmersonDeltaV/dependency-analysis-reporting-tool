@@ -285,5 +285,116 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             await nuget.Received(1).GetDataAsync(Arg.Any<PackageData>(), Arg.Any<CancellationToken>());
             rec.Received(1).DetermineAction(Arg.Any<PackageData>());
         }
+
+        [Fact]
+        public async Task AnalyzeProjectAsync_ShouldAnalyzeNpmProject_WhenProjectTypeIsNpm()
+        {
+            // Arrange
+            var (svc, nuget, npm, rec, _) = CreateServiceWithMocks();
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = new PackageRecommendationConfig
+                {
+                    Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+                }
+            };
+            rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
+
+            var project = new ProjectInfo
+            {
+                Name = "NpmProject",
+                FilePath = "package.json",
+                RepositoryName = "Repo",
+                ProjectType = ProjectType.Npm,
+                Content = """
+                {
+                  "dependencies": {
+                    "lodash": "4.17.21"
+                  }
+                }
+                """
+            };
+
+            // Act
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles { IncludeNpmDevDependencies = false }, CancellationToken.None);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("lodash", result[0].Id);
+            Assert.Equal("ACTION", result[0].Action);
+            await npm.Received(1).GetDataAsync(Arg.Is<PackageData>(p => p.Id == "lodash"), Arg.Any<CancellationToken>());
+            await nuget.DidNotReceive().GetDataAsync(Arg.Any<PackageData>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AnalyzeProjectAsync_ShouldThrowNotSupportedException_WhenProjectTypeIsUnsupported()
+        {
+            // Arrange
+            var (svc, _, _, _, _) = CreateServiceWithMocks();
+            var project = new ProjectInfo
+            {
+                Name = "Unknown",
+                FilePath = "unknown.file",
+                RepositoryName = "Repo",
+                Content = "{}",
+                ProjectType = (ProjectType)999
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = new PackageRecommendationConfig
+                {
+                    Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+                }
+            };
+
+            // Act / Assert
+            await Assert.ThrowsAsync<NotSupportedException>(() =>
+                svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task AnalyzeProjectAsync_ShouldReturnEmpty_WhenCSharpResolverThrows()
+        {
+            // Arrange
+            var logger = Substitute.For<ILogger<ProjectAnalysisService>>();
+            var nuget = Substitute.For<INugetMetadataService>();
+            var npm = Substitute.For<INpmMetadataService>();
+            var rec = Substitute.For<IPackageRecommendationService>();
+            var resolver = Substitute.For<ICSharpPackageVersionResolver>();
+            resolver.ResolvePackageVersions(Arg.Any<ProjectInfo>())
+                .Returns(_ => throw new InvalidOperationException("resolver failed"));
+
+            var svc = new ProjectAnalysisService(logger, nuget, npm, rec, resolver);
+            var project = CreateProjectWithPackages(("Serilog", "3.0.0"));
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = new PackageRecommendationConfig
+                {
+                    Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+                }
+            };
+
+            // Act
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+
+            // Assert
+            Assert.Empty(result);
+            await nuget.DidNotReceive().GetDataAsync(Arg.Any<PackageData>(), Arg.Any<CancellationToken>());
+            rec.DidNotReceive().DetermineAction(Arg.Any<PackageData>());
+        }
+
+        private static (ProjectAnalysisService svc, INugetMetadataService nuget, INpmMetadataService npm, IPackageRecommendationService rec, ILogger<ProjectAnalysisService> logger)
+            CreateServiceWithMocks()
+        {
+            var logger = Substitute.For<ILogger<ProjectAnalysisService>>();
+            var nuget = Substitute.For<INugetMetadataService>();
+            var npm = Substitute.For<INpmMetadataService>();
+            var rec = Substitute.For<IPackageRecommendationService>();
+            var resolverLogger = Substitute.For<ILogger<CSharpPackageVersionResolver>>();
+            var resolver = new CSharpPackageVersionResolver(resolverLogger);
+            var svc = new ProjectAnalysisService(logger, nuget, npm, rec, resolver);
+            return (svc, nuget, npm, rec, logger);
+        }
     }
 }
