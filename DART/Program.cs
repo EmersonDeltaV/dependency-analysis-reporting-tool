@@ -69,6 +69,7 @@ class Program
         builder.Services.AddSingleton<INugetMetadataService, NugetMetadataService>();
         builder.Services.AddSingleton<IAzureDevOpsClientFactory, AzureDevOpsClientFactory>();
         builder.Services.AddSingleton<IRepositoryProcessorService, RepositoryProcessorService>();
+        builder.Services.AddSingleton<ICSharpPackageVersionResolver, CSharpPackageVersionResolver>();
         builder.Services.AddSingleton<IProjectAnalysisService, ProjectAnalysisService>();
         builder.Services.AddSingleton<IPackageRecommendationService, PackageRecommendationService>();
         builder.Services.AddSingleton<INpmMetadataService, NpmMetadataService>();
