@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using DART.EOLAnalysis.Models;
 using DART.EOLAnalysis.Helpers;
-using System.Xml.Linq;
 
 namespace DART.EOLAnalysis.Services
 {
@@ -13,16 +12,19 @@ namespace DART.EOLAnalysis.Services
         private readonly INugetMetadataService _nugetMetadata;
         private readonly INpmMetadataService _npmMetadata;
         private readonly IPackageRecommendationService _packageRecommendation;
+        private readonly ICSharpPackageVersionResolver _csharpPackageVersionResolver;
 
         public ProjectAnalysisService(ILogger<ProjectAnalysisService> logger,
                                       INugetMetadataService nugetMetadata,
                                       INpmMetadataService npmMetadata,
-                                      IPackageRecommendationService packageRecommendation)
+                                      IPackageRecommendationService packageRecommendation,
+                                      ICSharpPackageVersionResolver csharpPackageVersionResolver)
         {
             _logger = logger;
             _nugetMetadata = nugetMetadata;
             _npmMetadata = npmMetadata;
             _packageRecommendation = packageRecommendation;
+            _csharpPackageVersionResolver = csharpPackageVersionResolver;
         }
 
         public Task<List<PackageData>> AnalyzeProjectAsync(
@@ -50,31 +52,17 @@ namespace DART.EOLAnalysis.Services
 
                 _logger.LogInformation("Analyzing C# project: {ProjectName}", projectInfo.Name);
 
-                IEnumerable<XElement> packageReferences;
+                List<(string Id, string Version)> packageList;
                 try
                 {
-                    packageReferences = PackageConfigHelper.GetPackagesFromContent(projectInfo.Content);
+                    packageList = _csharpPackageVersionResolver.ResolvePackageVersions(projectInfo);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to parse .csproj file {ProjectPath} in project {ProjectName}: {ErrorMessage}",
+                    _logger.LogWarning(ex, "Failed to resolve package versions for .csproj file {ProjectPath} in project {ProjectName}: {ErrorMessage}",
                         projectInfo.FilePath, projectInfo.Name, ex.Message);
                     return [];
                 }
-
-                var packageList = packageReferences
-                    .Select(r => (Id: r.Attribute("Include")?.Value, Version: r.Attribute("Version")?.Value))
-                    .Where(p =>
-                    {
-                        if (p.Id == null || p.Version == null)
-                        {
-                            _logger.LogWarning("PackageReference element is missing 'Include' or 'Version' attribute in project {ProjectName}", projectInfo.Name);
-                            return false;
-                        }
-                        return true;
-                    })
-                    .Select(p => (p.Id!, p.Version!))
-                    .ToList();
 
                 if (packageList.Count == 0)
                 {
