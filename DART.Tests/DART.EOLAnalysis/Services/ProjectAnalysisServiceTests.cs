@@ -26,6 +26,109 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             };
         }
 
+        private static ProjectInfo CreateProjectWithContent(string filePath, string content, IReadOnlyDictionary<string, string>? propsByPath = null)
+        {
+            return new ProjectInfo
+            {
+                Name = "TestProject",
+                FilePath = filePath,
+                Content = content,
+                RepositoryName = "Repo",
+                DirectoryPackagesPropsByPath = propsByPath ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            };
+        }
+
+        [Fact]
+        public async Task AnalyzeProjectAsync_ShouldResolveCpmVersionAndAnalyzePackage_WhenInlineVersionMissing()
+        {
+            // Arrange
+            var (svc, nuget, rec, _) = CreateService();
+            var packageConfig = new PackageRecommendationConfig
+            {
+                Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
+            };
+
+            rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
+
+            var projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Serilog" />
+              </ItemGroup>
+            </Project>
+            """;
+
+            var propsContent = """
+            <Project>
+              <ItemGroup>
+                <PackageVersion Include="Serilog" Version="3.0.0" />
+              </ItemGroup>
+            </Project>
+            """;
+
+            var project = CreateProjectWithContent(
+                "/src/App/App.csproj",
+                projectContent,
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["/src/Directory.Packages.props"] = propsContent
+                });
+
+            // Act
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Serilog", result[0].Id);
+            Assert.Equal("3.0.0", result[0].Version);
+            Assert.Equal("ACTION", result[0].Action);
+
+            await nuget.Received(1).GetDataAsync(
+                Arg.Is<PackageData>(p => p.Id == "Serilog" && p.Version == "3.0.0"),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AnalyzeProjectAsync_ShouldSkipPackage_WhenVersionRemainsUnresolved()
+        {
+            // Arrange
+            var (svc, nuget, rec, _) = CreateService();
+            var packageConfig = new PackageRecommendationConfig
+            {
+                Messages = new PackageActionMessages { SkipInternal = "INTERNAL" }
+            };
+
+            var config = new EOLAnalysisConfig
+            {
+                PackageRecommendation = packageConfig
+            };
+
+            rec.DetermineAction(Arg.Any<PackageData>()).Returns("ACTION");
+
+            var projectContent = """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Serilog" />
+              </ItemGroup>
+            </Project>
+            """;
+
+            var project = CreateProjectWithContent("/src/App/App.csproj", projectContent);
+
+            // Act
+            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+
+            // Assert
+            Assert.Empty(result);
+            await nuget.DidNotReceive().GetDataAsync(Arg.Any<PackageData>(), Arg.Any<CancellationToken>());
+            rec.DidNotReceive().DetermineAction(Arg.Any<PackageData>());
+        }
+
         [Fact]
         public async Task AnalyzeProjectAsync_ShouldMatchCaseInsensitiveAndQuestionMarkWildcard_AndIgnoreBlankPatterns()
         {
@@ -72,7 +175,9 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var nuget = Substitute.For<INugetMetadataService>();
             var npm = Substitute.For<INpmMetadataService>();
             var rec = Substitute.For<IPackageRecommendationService>();
-            var svc = new ProjectAnalysisService(logger, nuget, npm, rec);
+            var resolverLogger = Substitute.For<ILogger<CSharpPackageVersionResolver>>();
+            var resolver = new CSharpPackageVersionResolver(resolverLogger);
+            var svc = new ProjectAnalysisService(logger, nuget, npm, rec, resolver);
             return (svc, nuget, rec, logger);
         }
 
