@@ -2,22 +2,35 @@
 
 ## Overview
 
-Blackduck and End-of-Life (EOL) Analysis reports that once took hours or even days to create manually can now be generated in just minutes.
+Black Duck and End-of-Life (EOL) Analysis reports that once took hours or even days to create manually can now be generated in just minutes.
 
 The **Dependency Analysis Report Tool (DART)** is a .NET console application that provides actionable insights by merging vulnerability data with dependency lifecycle information, enabling development teams to make informed decisions about security risks and technical debt every PI.
 
 ## Key Benefits
 
-- Unified Excel reports combining Blackduck vulnerability and EOL analysis
-- Automated Blackduck report downloading and processing
-- NuGet package lifecycle analysis for Azure DevOps repositories
+### Unified Excel Reports
+
+- Combines Black Duck vulnerability and EOL analysis into a single report
+
+### Black Duck Analysis
+
+- Automates Black Duck report downloading and processing
+
+### NPM Scanning
+
+- Scans `package.json` dependencies (with optional dev dependency inclusion)
+
+### NuGet Scanning
+
+- Scans `.csproj` package references
+- Scans `Directory.Packages.props` for Central Package Management (CPM) package versions
 
 ## Getting Started
 
 ### Prerequisites
 
 - **Microsoft Excel Desktop or Web** - For viewing generated reports
-- **BlackDuck Account** - With read access for vulnerability analysis
+- **Black Duck Account** - With read access for vulnerability analysis
 - **Azure DevOps Access** - For EOL analysis of repositories (optional)
 
 ### How to Guide
@@ -148,10 +161,10 @@ Navigate to the `DART/config.json` file and configure the following core setting
 **Configuration Issues**:
 - Use double backslashes (`\\`) in Windows file paths in config.json
 - Ensure all required directories exist and are accessible
-- Verify tokens have appropriate permissions (BlackDuck: Read Access, Azure DevOps: Code Read)
+- Verify tokens have appropriate permissions (Black Duck: Read Access, Azure DevOps: Code Read)
 **Runtime Issues**:
 - Run as administrator if encountering file access issues
-- Check network connectivity to BlackDuck and Azure DevOps services
+- Check network connectivity to Black Duck and Azure DevOps services
 - Review log files in the configured `LogPath` directory
 **Empty Results**:
 - Ensure Azure DevOps repositories are accessible and contain supported project files
