@@ -1,4 +1,5 @@
 using DART.Core.Contracts;
+using DART.Core.Blackduck;
 
 namespace DART.Core.Services;
 
@@ -6,11 +7,16 @@ public sealed class AnalysisOrchestrator : IAnalysisOrchestrator
 {
     private readonly IBlackduckAnalyzer _blackduckAnalyzer;
     private readonly IEolAnalyzer _eolAnalyzer;
+    private readonly IBlackduckFindingCollector? _blackduckFindingCollector;
 
-    public AnalysisOrchestrator(IBlackduckAnalyzer blackduckAnalyzer, IEolAnalyzer eolAnalyzer)
+    public AnalysisOrchestrator(
+        IBlackduckAnalyzer blackduckAnalyzer,
+        IEolAnalyzer eolAnalyzer,
+        IBlackduckFindingCollector? blackduckFindingCollector = null)
     {
         _blackduckAnalyzer = blackduckAnalyzer;
         _eolAnalyzer = eolAnalyzer;
+        _blackduckFindingCollector = blackduckFindingCollector;
     }
 
     public async Task<AnalysisResult> RunAsync(AnalysisRequest request, CancellationToken cancellationToken)

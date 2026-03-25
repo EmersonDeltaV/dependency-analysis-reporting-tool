@@ -1,17 +1,18 @@
 using DART.BlackduckAnalysis;
+using DART.Core.Blackduck;
 using DART.Exceptions;
 using DART.Models;
 using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
-using System.Threading.Channels;
 
 namespace DART.Services.Implementation
 {
     public class CsvService : ICsvService
     {
         private readonly IBlackduckApiService _blackduckApiService;
+        private readonly IBlackduckFindingCollector _blackduckFindingCollector;
         private readonly IExcelService _excelService;
         private readonly ILogger<CsvService> _logger;
         private readonly Config _config;
@@ -27,12 +28,14 @@ namespace DART.Services.Implementation
         public CsvService(IBlackduckApiService blackduckApiService,
                           IExcelService excelService,
                           IConfiguration configuration,
-                          ILogger<CsvService> logger)
+                          ILogger<CsvService> logger,
+                          IBlackduckFindingCollector? blackduckFindingCollector = null)
         {
             _blackduckApiService = blackduckApiService;
             _excelService = excelService;
             _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
             _logger = logger;
+            _blackduckFindingCollector = blackduckFindingCollector ?? new BlackduckFindingCollector();
         }
 
         /// <summary>
@@ -51,6 +54,13 @@ namespace DART.Services.Implementation
 
             var latestVersion = await _blackduckApiService.GetLatestProjectVersion(_config.BlackduckConfiguration);
             var configVersions = _config.BlackduckConfiguration.BlackduckRepositories.ToDictionary(r => r.Id, r => r.Versions);
+            var collectorOptions = new BlackduckCollectorOptions
+            {
+                IncludeTransitiveDependency = _config.BlackduckConfiguration.IncludeTransitiveDependency,
+                IncludeRecommendedFix = _config.BlackduckConfiguration.IncludeRecommendedFix,
+                LatestVersions = latestVersion,
+                ConfiguredVersions = configVersions
+            };
 
             foreach (var csvFile in csvFiles)
             {
@@ -64,55 +74,38 @@ namespace DART.Services.Implementation
                     continue;
                 }
 
-                // Collect all valid rows for this file first
-                var validRows = new List<RowDetails>();
+                var rawRows = new List<BlackduckRawFinding>();
                 for (int i = 1; i < csvData.Length; i++)
                 {
-                    var rowDetails = ExtractRowDetails(csvData[i], latestVersion, configVersions);
-                    if (rowDetails != null)
-                        validRows.Add(rowDetails);
+                    var rawFinding = ExtractRawFinding(csvData[i]);
+                    if (rawFinding != null)
+                    {
+                        rawRows.Add(rawFinding);
+                    }
                 }
 
-                if (validRows.Count == 0)
+                if (rawRows.Count == 0)
                     continue;
 
-                // Fetch recommended fixes in parallel using a bounded channel of size 10
-                if (_config.BlackduckConfiguration.IncludeRecommendedFix)
-                {
-                    var channel = Channel.CreateBounded<RowDetails>(_config.BlackduckConfiguration.BoundedCapacity);
+                var findings = await _blackduckFindingCollector.CollectAsync(
+                    rawRows,
+                    collectorOptions,
+                    (vulnerabilityId, _) => _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, vulnerabilityId),
+                    CancellationToken.None);
 
-                    var producer = Task.Run(async () =>
+                foreach (var finding in findings)
+                {
+                    _excelService.PopulateRow(new RowDetails
                     {
-                        try
-                        {
-                            foreach (var row in validRows)
-                                await channel.Writer.WriteAsync(row);
-                        }
-                        finally
-                        {
-                            channel.Writer.Complete();
-                        }
+                        ApplicationName = finding.ApplicationName,
+                        SoftwareComponent = finding.SoftwareComponent,
+                        Version = finding.Version,
+                        SecurityRisk = finding.SecurityRisk,
+                        VulnerabilityId = finding.VulnerabilityId,
+                        RecommendedFix = finding.RecommendedFix,
+                        MatchType = finding.MatchType
                     });
-
-                    var consumers = Enumerable.Range(0, _config.BlackduckConfiguration.MaxConcurrency).Select(_ => Task.Run(async () =>
-                    {
-                        await foreach (var row in channel.Reader.ReadAllAsync())
-                        {
-                            row.RecommendedFix = await _blackduckApiService.GetRecommendedFix(
-                                _config.BlackduckConfiguration, row.VulnerabilityId);
-                        }
-                    })).ToArray();
-
-                    await Task.WhenAll([producer, .. consumers]);
                 }
-                else
-                {
-                    foreach (var row in validRows)
-                        row.RecommendedFix = "N/A";
-                }
-
-                foreach (var row in validRows)
-                    _excelService.PopulateRow(row);
             }
         }
 
@@ -151,44 +144,23 @@ namespace DART.Services.Implementation
             return projectIdIndex != -1 && projectNameIndex != -1 && componentOriginIdIndex != -1 && securityRiskIndex != -1 && vulnerabilityIdIndex != -1;
         }
 
-        private RowDetails? ExtractRowDetails(string csvRowData, Dictionary<string, string> latestVersions, Dictionary<string, string> configVersions)
+        private BlackduckRawFinding? ExtractRawFinding(string csvRowData)
         {
             var parsedRow = ParseCsvRow(csvRowData);
-            var matchType = parsedRow[matchTypeIndex];
-            var version = parsedRow[versionIndex];
-            var projectId = parsedRow[projectIdIndex];
 
-            if (!_config.BlackduckConfiguration.IncludeTransitiveDependency &&
-                matchType.Equals("Transitive Dependency", StringComparison.OrdinalIgnoreCase))
+            if (parsedRow.Length <= Math.Max(versionIndex, Math.Max(matchTypeIndex, vulnerabilityIdIndex)))
             {
                 return null;
             }
 
-            var requestedVersions = configVersions.TryGetValue(projectId, out var versionsString)
-                ? versionsString.Split(',').Select(v => v.Trim().ToLowerInvariant()).ToArray()
-                : [];
-            
-            var latestVersion = latestVersions.TryGetValue(projectId, out var latest) ? latest : string.Empty;
-
-            if (!(requestedVersions.Contains(string.Empty) ||
-                requestedVersions.Contains(version.ToLowerInvariant(), StringComparer.OrdinalIgnoreCase) ||
-                (requestedVersions.Contains("<latest>") && version.Equals(latestVersion, StringComparison.OrdinalIgnoreCase))))
-            {
-                _logger.LogInformation($"This row with version {version} does not match the required version. Skipping this row.");
-                return null;
-            }
-
-            var rowDetails = new RowDetails()
-            {
-                ApplicationName = parsedRow[projectNameIndex],
-                SoftwareComponent = parsedRow[componentOriginIdIndex],
-                SecurityRisk = parsedRow[securityRiskIndex],
-                VulnerabilityId = parsedRow[vulnerabilityIdIndex],
-                MatchType = matchType,
-                Version = version
-            };
-
-            return rowDetails;
+            return new BlackduckRawFinding(
+                parsedRow[projectIdIndex],
+                parsedRow[projectNameIndex],
+                parsedRow[componentOriginIdIndex],
+                parsedRow[securityRiskIndex],
+                parsedRow[vulnerabilityIdIndex],
+                parsedRow[matchTypeIndex],
+                parsedRow[versionIndex]);
         }
 
         private string[] ParseCsvRow(string row)
