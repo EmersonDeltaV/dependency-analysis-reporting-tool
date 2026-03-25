@@ -1,6 +1,6 @@
 namespace DART.Core.Contracts;
 
-public sealed class DartEolFinding
+public sealed class EolFinding
 {
     public string PackageId { get; init; } = string.Empty;
 
@@ -14,3 +14,4 @@ public sealed class DartEolFinding
 
     public string RecommendedAction { get; init; } = string.Empty;
 }
+

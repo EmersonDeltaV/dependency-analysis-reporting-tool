@@ -2,13 +2,15 @@ using DART.Core.Contracts;
 
 namespace DART.Tests.DART.Core.Contracts;
 
-public class DartRunIssueTests
+public class RunIssueTests
 {
     [Fact]
-    public void DartRunIssue_ShouldBeConstructible()
+    public void RunIssue_ShouldBeConstructible()
     {
-        var issue = new DartRunIssue();
+        var issue = new RunIssue();
 
         Assert.NotNull(issue);
     }
 }
+
+

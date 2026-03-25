@@ -1,6 +1,6 @@
 namespace DART.Core.Contracts;
 
-public sealed class DartBlackduckFinding
+public sealed class BlackduckFinding
 {
     public string ApplicationName { get; init; } = string.Empty;
 
@@ -16,3 +16,4 @@ public sealed class DartBlackduckFinding
 
     public string MatchType { get; init; } = string.Empty;
 }
+

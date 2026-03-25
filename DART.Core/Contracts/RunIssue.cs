@@ -1,6 +1,6 @@
 namespace DART.Core.Contracts;
 
-public sealed class DartRunIssue
+public sealed class RunIssue
 {
     public string Source { get; init; } = string.Empty;
 
@@ -8,3 +8,4 @@ public sealed class DartRunIssue
 
     public bool IsWarning { get; init; } = true;
 }
+

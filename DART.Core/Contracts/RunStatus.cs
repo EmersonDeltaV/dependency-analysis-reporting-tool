@@ -1,6 +1,6 @@
 namespace DART.Core.Contracts;
 
-public enum DartRunStatus
+public enum RunStatus
 {
     NotStarted = 0,
     Running = 1,
@@ -8,3 +8,4 @@ public enum DartRunStatus
     CompletedWithWarnings = 3,
     Failed = 4
 }
+

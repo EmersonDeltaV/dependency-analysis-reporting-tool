@@ -2,13 +2,15 @@ using DART.Core.Contracts;
 
 namespace DART.Tests.DART.Core.Contracts;
 
-public class DartEolFindingTests
+public class EolFindingTests
 {
     [Fact]
-    public void DartEolFinding_ShouldBeConstructible()
+    public void EolFinding_ShouldBeConstructible()
     {
-        var finding = new DartEolFinding();
+        var finding = new EolFinding();
 
         Assert.NotNull(finding);
     }
 }
+
+
