@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace DART.EOLAnalysis.Helpers
+namespace DART.EOLAnalysis
 {
     public static class PackageConfigHelper
     {
@@ -36,5 +36,4 @@ namespace DART.EOLAnalysis.Helpers
             return Enumerable.Empty<XElement>();
         }
     }
-
 }

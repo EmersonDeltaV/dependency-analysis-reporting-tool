@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     public class PackageRecommendationService : IPackageRecommendationService
     {

@@ -1,8 +1,7 @@
 using ClosedXML.Excel;
-using DART.Core.Contracts;
-using DART.Core.Models;
+using DART.Core;
 
-namespace DART.ReportGenerator.Interfaces;
+namespace DART.ReportGenerator;
 
 public interface IReportGenerator
 {

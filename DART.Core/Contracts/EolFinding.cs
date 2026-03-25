@@ -1,4 +1,4 @@
-namespace DART.Core.Contracts;
+namespace DART.Core;
 
 public sealed class EolFinding
 {

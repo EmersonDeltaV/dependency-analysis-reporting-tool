@@ -1,4 +1,4 @@
-namespace DART.EOLAnalysis.Clients
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Factory for creating Azure DevOps client instances with authentication.

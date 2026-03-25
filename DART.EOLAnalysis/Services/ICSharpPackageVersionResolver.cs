@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Resolves C# package versions using direct project versions first, then CPM fallback when available.

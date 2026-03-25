@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Provides access to NuGet package metadata including version history and publication dates.

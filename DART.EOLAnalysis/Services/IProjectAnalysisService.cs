@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Analyzes individual .NET project files to extract and evaluate package dependencies.

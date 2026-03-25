@@ -1,10 +1,9 @@
-using DART.EOLAnalysis.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace DART.EOLAnalysis.Clients
+namespace DART.EOLAnalysis
 {
     public class AzureDevOpsClient : IAzureDevOpsClient, IDisposable
     {

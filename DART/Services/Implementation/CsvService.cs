@@ -1,4 +1,5 @@
 using DART.BlackduckAnalysis;
+using DART.Core;
 using DART.Core.Blackduck;
 using DART.Exceptions;
 using DART.Models;
@@ -6,6 +7,7 @@ using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using CsvRowDetails = DART.Models.RowDetails;
 
 namespace DART.Services.Implementation
 {
@@ -15,7 +17,7 @@ namespace DART.Services.Implementation
         private readonly IBlackduckFindingCollector _blackduckFindingCollector;
         private readonly IExcelService _excelService;
         private readonly ILogger<CsvService> _logger;
-        private readonly Config _config;
+        private readonly DART.Core.Config _config;
 
         private int projectIdIndex;
         private int projectNameIndex;
@@ -33,7 +35,7 @@ namespace DART.Services.Implementation
         {
             _blackduckApiService = blackduckApiService;
             _excelService = excelService;
-            _config = configuration.Get<Config>() ?? throw new ConfigException("Failed to load configuration");
+            _config = configuration.Get<DART.Core.Config>() ?? throw new ConfigException("Failed to load configuration");
             _logger = logger;
             _blackduckFindingCollector = blackduckFindingCollector ?? new BlackduckFindingCollector();
         }
@@ -95,7 +97,7 @@ namespace DART.Services.Implementation
 
                 foreach (var finding in findings)
                 {
-                    _excelService.PopulateRow(new RowDetails
+                    _excelService.PopulateRow(new CsvRowDetails
                     {
                         ApplicationName = finding.ApplicationName,
                         SoftwareComponent = finding.SoftwareComponent,

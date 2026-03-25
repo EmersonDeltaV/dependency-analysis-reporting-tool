@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace DART.EOLAnalysis.Helpers
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Parses npm package dependencies from package.json file content.

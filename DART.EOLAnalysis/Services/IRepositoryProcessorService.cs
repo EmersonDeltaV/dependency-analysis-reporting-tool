@@ -1,7 +1,4 @@
-using DART.EOLAnalysis.Models;
-using DART.EOLAnalysis.Clients;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Processes Azure DevOps repositories to discover and retrieve project files (.csproj and/or package.json).

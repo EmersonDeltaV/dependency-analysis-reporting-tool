@@ -1,6 +1,6 @@
 using ClosedXML.Excel;
 
-namespace DART.ReportGenerator.Services;
+namespace DART.ReportGenerator;
 
 public sealed class WorkbookComparisonService
 {

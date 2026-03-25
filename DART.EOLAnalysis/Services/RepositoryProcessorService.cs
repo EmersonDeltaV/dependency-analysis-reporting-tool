@@ -1,10 +1,8 @@
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using DART.EOLAnalysis.Clients;
-using DART.EOLAnalysis.Models;
-using Microsoft.Extensions.Logging;
 
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     public class RepositoryProcessorService : IRepositoryProcessorService
     {

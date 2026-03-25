@@ -1,4 +1,4 @@
-namespace DART.Core.Models;
+namespace DART.Core;
 
 public sealed class RowDetails
 {

@@ -1,4 +1,4 @@
-namespace DART.EOLAnalysis.Helpers
+namespace DART.EOLAnalysis
 {
     public static class ParseRepoUrlHelper
     {

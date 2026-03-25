@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Provides package recommendation logic based on configurable age thresholds and business rules.

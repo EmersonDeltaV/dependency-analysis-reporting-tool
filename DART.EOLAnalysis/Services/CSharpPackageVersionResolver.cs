@@ -1,9 +1,8 @@
+using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using DART.EOLAnalysis.Models;
-using Microsoft.Extensions.Logging;
 
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     public class CSharpPackageVersionResolver : ICSharpPackageVersionResolver
     {

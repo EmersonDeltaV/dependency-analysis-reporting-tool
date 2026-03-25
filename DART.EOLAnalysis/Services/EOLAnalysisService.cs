@@ -1,6 +1,3 @@
-using DART.EOLAnalysis.Clients;
-using DART.EOLAnalysis.Models;
-using DART.EOLAnalysis.Services;
 using Microsoft.Extensions.Logging;
 
 namespace DART.EOLAnalysis

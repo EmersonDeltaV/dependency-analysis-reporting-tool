@@ -1,7 +1,7 @@
 using DART.BlackduckAnalysis;
-using DART.EOLAnalysis.Models;
+using DART.EOLAnalysis;
 
-namespace DART.Core.Configuration;
+namespace DART.Core;
 
 public sealed class Config
 {

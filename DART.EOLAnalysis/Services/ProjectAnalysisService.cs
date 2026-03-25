@@ -1,10 +1,8 @@
-using System.Threading.Channels;
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
-using DART.EOLAnalysis.Models;
-using DART.EOLAnalysis.Helpers;
+using System.Collections.Concurrent;
+using System.Threading.Channels;
 
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     public class ProjectAnalysisService : IProjectAnalysisService
     {

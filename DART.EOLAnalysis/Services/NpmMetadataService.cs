@@ -1,8 +1,6 @@
-using DART.EOLAnalysis.Helpers;
-using DART.EOLAnalysis.Models;
 using System.Text.Json;
 
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Retrieves npm package metadata from the npm registry REST API.

@@ -1,4 +1,4 @@
-namespace DART.EOLAnalysis.Models
+namespace DART.EOLAnalysis
 {
     public class GitItem
     {

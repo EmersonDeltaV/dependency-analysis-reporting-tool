@@ -1,8 +1,7 @@
 using DART.Core.Blackduck;
-using DART.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DART.Core.DependencyInjection;
+namespace DART.Core;
 
 public static class DartCoreServiceCollectionExtensions
 {
@@ -13,4 +12,3 @@ public static class DartCoreServiceCollectionExtensions
         return services;
     }
 }
-

@@ -1,15 +1,9 @@
 using DART;
 using DART.BlackduckAnalysis;
-using DART.Core.DependencyInjection;
-using DART.Core.Services;
+using DART.Core;
 using DART.EOLAnalysis;
-using DART.EOLAnalysis.Clients;
-using DART.EOLAnalysis.Services;
-using DART.Models;
-using DART.ReportGenerator.Interfaces;
-using DART.ReportGenerator.Services;
+using DART.ReportGenerator;
 using DART.Services.Implementation;
-using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -62,8 +56,6 @@ class Program
         builder.Services.AddSingleton<IReportGenerator, ReportGenerator>();
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
-        builder.Services.AddSingleton<ICsvService, CsvService>();
-        builder.Services.AddSingleton<IExcelService, ExcelService>();
         builder.Services.AddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
         builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
         builder.Services.AddSingleton<IBlackduckApiService, BlackduckApiService>();

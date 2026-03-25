@@ -1,4 +1,4 @@
-namespace DART.Core.Configuration;
+namespace DART.Core;
 
 public sealed class ReportConfiguration
 {

@@ -1,5 +1,3 @@
-using DART.EOLAnalysis.Models;
-
 namespace DART.EOLAnalysis
 {
     /// <summary>

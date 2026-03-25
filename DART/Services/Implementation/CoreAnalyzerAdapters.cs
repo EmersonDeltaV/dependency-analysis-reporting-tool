@@ -1,12 +1,11 @@
-using System.Text.RegularExpressions;
 using DART.BlackduckAnalysis;
+using DART.Core;
 using DART.Core.Blackduck;
-using DART.Core.Contracts;
-using DART.Core.Services;
 using DART.EOLAnalysis;
 using DART.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace DART.Services.Implementation;
 
@@ -15,13 +14,13 @@ public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
     private readonly IBlackduckReportGenerator _blackduckReportGenerator;
     private readonly IBlackduckApiService _blackduckApiService;
     private readonly IBlackduckFindingCollector _collector;
-    private readonly Config _config;
+    private readonly DART.Core.Config _config;
     private readonly ILogger<BlackduckAnalyzerAdapter> _logger;
 
     public BlackduckAnalyzerAdapter(
         IBlackduckReportGenerator blackduckReportGenerator,
         IBlackduckApiService blackduckApiService,
-        IOptions<Config> configOptions,
+        IOptions<DART.Core.Config> configOptions,
         IBlackduckFindingCollector collector,
         ILogger<BlackduckAnalyzerAdapter> logger)
     {
@@ -207,9 +206,9 @@ public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
 public sealed class EolAnalyzerAdapter : IEolAnalyzer
 {
     private readonly IEOLAnalysisService _eolAnalysisService;
-    private readonly Config _config;
+    private readonly DART.Core.Config _config;
 
-    public EolAnalyzerAdapter(IEOLAnalysisService eolAnalysisService, IOptions<Config> configOptions)
+    public EolAnalyzerAdapter(IEOLAnalysisService eolAnalysisService, IOptions<DART.Core.Config> configOptions)
     {
         _eolAnalysisService = eolAnalysisService;
         _config = configOptions.Value;
@@ -240,3 +239,4 @@ public sealed class EolAnalyzerAdapter : IEolAnalyzer
         }).ToList();
     }
 }
+

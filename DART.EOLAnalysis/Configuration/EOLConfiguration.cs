@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Configuration
+namespace DART.EOLAnalysis
 {
     public class EOLConfiguration
     {

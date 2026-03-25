@@ -1,5 +1,5 @@
 using DART.BlackduckAnalysis;
-using DART.EOLAnalysis.Models;
+using DART.EOLAnalysis;
 
 namespace DART.Models
 {
@@ -36,3 +36,4 @@ namespace DART.Models
         public string ProductIteration { get; set; } = string.Empty;
     }
 }
+

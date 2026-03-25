@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace DART.EOLAnalysis.Clients
+namespace DART.EOLAnalysis
 {
     public class AzureDevOpsClientFactory : IAzureDevOpsClientFactory
     {

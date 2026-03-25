@@ -1,9 +1,8 @@
-using DART.EOLAnalysis.Models;
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
-namespace DART.EOLAnalysis.Services
+namespace DART.EOLAnalysis
 {
     public class NugetMetadataService : INugetMetadataService
     {

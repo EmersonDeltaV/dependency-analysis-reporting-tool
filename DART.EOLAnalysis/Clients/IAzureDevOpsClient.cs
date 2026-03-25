@@ -1,6 +1,4 @@
-using DART.EOLAnalysis.Models;
-
-namespace DART.EOLAnalysis.Clients
+namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Provides access to Azure DevOps repositories for retrieving project files and content.

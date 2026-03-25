@@ -1,9 +1,6 @@
-using DART.Core.Contracts;
-
-namespace DART.Core.Services;
+namespace DART.Core;
 
 public interface IEolAnalyzer
 {
     Task<IReadOnlyCollection<EolFinding>> AnalyzeAsync(AnalysisRequest request, CancellationToken cancellationToken);
 }
-
