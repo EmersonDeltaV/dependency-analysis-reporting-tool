@@ -1,9 +1,6 @@
 using DART;
 using DART.BlackduckAnalysis;
 using DART.Core;
-using DART.EOLAnalysis;
-using DART.ReportGenerator;
-using DART.Services.Implementation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,24 +47,9 @@ class Program
         builder.Services.Configure<Config>(configuration);
         // Register BlackduckConfiguration separately from the nested Config property
         builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
-        builder.Services.AddSingleton<IBlackduckAnalyzer, BlackduckAnalyzerAdapter>();
-        builder.Services.AddSingleton<IEolAnalyzer, EolAnalyzerAdapter>();
         builder.Services.AddDartCore();
-        builder.Services.AddSingleton<IReportGenerator, ReportGenerator>();
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
-        builder.Services.AddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
-        builder.Services.AddSingleton<IBlackduckReportService, BlackduckReportService>();
-        builder.Services.AddSingleton<IBlackduckApiService, BlackduckApiService>();
-        builder.Services.AddSingleton<IFileService, FileService>();
-        builder.Services.AddSingleton<IEOLAnalysisService, EOLAnalysisService>();
-        builder.Services.AddSingleton<INugetMetadataService, NugetMetadataService>();
-        builder.Services.AddSingleton<IAzureDevOpsClientFactory, AzureDevOpsClientFactory>();
-        builder.Services.AddSingleton<IRepositoryProcessorService, RepositoryProcessorService>();
-        builder.Services.AddSingleton<ICSharpPackageVersionResolver, CSharpPackageVersionResolver>();
-        builder.Services.AddSingleton<IProjectAnalysisService, ProjectAnalysisService>();
-        builder.Services.AddSingleton<IPackageRecommendationService, PackageRecommendationService>();
-        builder.Services.AddSingleton<INpmMetadataService, NpmMetadataService>();
 
         using IHost host = builder.Build();
 

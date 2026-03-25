@@ -1,27 +1,25 @@
+using System.Text.RegularExpressions;
 using DART.BlackduckAnalysis;
-using DART.Core;
 using DART.EOLAnalysis;
-using DART.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.RegularExpressions;
 
-namespace DART.Services.Implementation;
+namespace DART.Core;
 
-public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
+public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
 {
     private readonly IBlackduckReportGenerator _blackduckReportGenerator;
     private readonly IBlackduckApiService _blackduckApiService;
     private readonly IBlackduckFindingCollector _collector;
-    private readonly DART.Core.Config _config;
-    private readonly ILogger<BlackduckAnalyzerAdapter> _logger;
+    private readonly Config _config;
+    private readonly ILogger<DartCoreBlackduckAnalyzerAdapter> _logger;
 
-    public BlackduckAnalyzerAdapter(
+    public DartCoreBlackduckAnalyzerAdapter(
         IBlackduckReportGenerator blackduckReportGenerator,
         IBlackduckApiService blackduckApiService,
-        IOptions<DART.Core.Config> configOptions,
+        IOptions<Config> configOptions,
         IBlackduckFindingCollector collector,
-        ILogger<BlackduckAnalyzerAdapter> logger)
+        ILogger<DartCoreBlackduckAnalyzerAdapter> logger)
     {
         _blackduckReportGenerator = blackduckReportGenerator;
         _blackduckApiService = blackduckApiService;
@@ -129,13 +127,13 @@ public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
     {
         var indexes = new HeaderIndexes
         {
-            ProjectId = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.ProjectId, StringComparison.OrdinalIgnoreCase)),
-            ProjectName = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.ProjectName, StringComparison.OrdinalIgnoreCase)),
-            ComponentOriginId = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.ComponentOriginId, StringComparison.OrdinalIgnoreCase)),
-            SecurityRisk = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.SecurityRisk, StringComparison.OrdinalIgnoreCase)),
-            VulnerabilityId = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.VulnerabilityId, StringComparison.OrdinalIgnoreCase)),
-            MatchType = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.MatchType, StringComparison.OrdinalIgnoreCase)),
-            Version = Array.FindIndex(headers, value => value.Equals(BlackduckCSVHeaders.Version, StringComparison.OrdinalIgnoreCase))
+            ProjectId = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.ProjectId, StringComparison.OrdinalIgnoreCase)),
+            ProjectName = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.ProjectName, StringComparison.OrdinalIgnoreCase)),
+            ComponentOriginId = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.ComponentOriginId, StringComparison.OrdinalIgnoreCase)),
+            SecurityRisk = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.SecurityRisk, StringComparison.OrdinalIgnoreCase)),
+            VulnerabilityId = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.VulnerabilityId, StringComparison.OrdinalIgnoreCase)),
+            MatchType = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.MatchType, StringComparison.OrdinalIgnoreCase)),
+            Version = Array.FindIndex(headers, value => value.Equals(BlackduckCsvHeaders.Version, StringComparison.OrdinalIgnoreCase))
         };
 
         return indexes.IsValid ? indexes : null;
@@ -195,6 +193,17 @@ public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
         };
     }
 
+    private static class BlackduckCsvHeaders
+    {
+        public const string ProjectId = "Project id";
+        public const string ProjectName = "Project name";
+        public const string ComponentOriginId = "Component origin id";
+        public const string SecurityRisk = "Security Risk";
+        public const string VulnerabilityId = "Vulnerability ID";
+        public const string MatchType = "Match type";
+        public const string Version = "Version";
+    }
+
     private sealed class HeaderIndexes
     {
         public int ProjectId { get; init; }
@@ -216,12 +225,12 @@ public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
     }
 }
 
-public sealed class EolAnalyzerAdapter : IEolAnalyzer
+public sealed class DartCoreEolAnalyzerAdapter : IEolAnalyzer
 {
     private readonly IEOLAnalysisService _eolAnalysisService;
-    private readonly DART.Core.Config _config;
+    private readonly Config _config;
 
-    public EolAnalyzerAdapter(IEOLAnalysisService eolAnalysisService, IOptions<DART.Core.Config> configOptions)
+    public DartCoreEolAnalyzerAdapter(IEOLAnalysisService eolAnalysisService, IOptions<Config> configOptions)
     {
         _eolAnalysisService = eolAnalysisService;
         _config = configOptions.Value;
@@ -252,4 +261,3 @@ public sealed class EolAnalyzerAdapter : IEolAnalyzer
         }).ToList();
     }
 }
-
