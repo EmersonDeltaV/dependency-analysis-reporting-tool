@@ -5,6 +5,9 @@
     <RootNamespace>DART.BlackduckAnalysis</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>DART.BlackduckAnalysis</PackageId>
+    <Description>Black Duck analysis services, models, and integrations for DART dependency reporting.</Description>
   </PropertyGroup>
 
   <ItemGroup>

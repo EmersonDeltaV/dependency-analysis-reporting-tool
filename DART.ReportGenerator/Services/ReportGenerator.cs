@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using DART.Core.Contracts;
 using DART.Core.Models;
 using DART.ReportGenerator.Interfaces;
 
@@ -6,6 +7,18 @@ namespace DART.ReportGenerator.Services;
 
 public sealed class ReportGenerator : IReportGenerator
 {
+    private readonly WorkbookComparisonService _comparisonService;
+
+    public ReportGenerator()
+        : this(new WorkbookComparisonService())
+    {
+    }
+
+    public ReportGenerator(WorkbookComparisonService comparisonService)
+    {
+        _comparisonService = comparisonService;
+    }
+
     public XLWorkbook BuildWorkbook(IReadOnlyCollection<RowDetails> rows, string productName, string productVersion, string productIteration)
     {
         var workbook = new XLWorkbook();
@@ -35,15 +48,52 @@ public sealed class ReportGenerator : IReportGenerator
 
     public string GenerateCurrentFormatReport(IReadOnlyCollection<RowDetails> rows, string outputDirectory, string appCode, string productName, string productVersion, string productIteration)
     {
+        return GenerateCurrentFormatReport(
+            rows,
+            Array.Empty<EolFinding>(),
+            outputDirectory,
+            appCode,
+            productName,
+            productVersion,
+            productIteration);
+    }
+
+    public string GenerateCurrentFormatReport(
+        IReadOnlyCollection<RowDetails> rows,
+        IReadOnlyCollection<EolFinding> eolFindings,
+        string outputDirectory,
+        string appCode,
+        string productName,
+        string productVersion,
+        string productIteration)
+    {
         Directory.CreateDirectory(outputDirectory);
 
         using var workbook = BuildWorkbook(rows, productName, productVersion, productIteration);
+
+        if (eolFindings.Count > 0)
+        {
+            AddEolAnalysisSheet(workbook, eolFindings);
+        }
+
         var fileName = BuildOutputFileName(appCode, DateTime.Now);
         var outputPath = Path.Combine(outputDirectory, fileName);
 
         workbook.SaveAs(outputPath);
 
         return outputPath;
+    }
+
+    public void CompareCurrentWithPrevious(string currentReportPath, string previousReportPath)
+    {
+        using var currentWorkbook = new XLWorkbook(currentReportPath);
+        using var previousWorkbook = new XLWorkbook(previousReportPath);
+
+        var currentWorksheet = currentWorkbook.Worksheet(1);
+        var previousWorksheet = previousWorkbook.Worksheet(1);
+
+        _comparisonService.ApplyComparison(currentWorksheet, previousWorksheet, 8);
+        currentWorkbook.Save();
     }
 
     private static void FormatHeader(IXLWorksheet worksheet, string productName, string productVersion, string productIteration)
@@ -117,5 +167,49 @@ public sealed class ReportGenerator : IReportGenerator
             cell.Style.Fill.BackgroundColor = XLColor.Yellow;
             cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         }
+    }
+
+    private static void AddEolAnalysisSheet(XLWorkbook workbook, IReadOnlyCollection<EolFinding> eolFindings)
+    {
+        var eolWorksheet = workbook.Worksheets.Add("EOL Analysis");
+
+        eolWorksheet.Cell(1, 1).Value = "Package ID";
+        eolWorksheet.Cell(1, 2).Value = "Repository";
+        eolWorksheet.Cell(1, 3).Value = "Project";
+        eolWorksheet.Cell(1, 4).Value = "Current Version";
+        eolWorksheet.Cell(1, 5).Value = "Version Date";
+        eolWorksheet.Cell(1, 6).Value = "Age (Days)";
+        eolWorksheet.Cell(1, 7).Value = "Latest Version";
+        eolWorksheet.Cell(1, 8).Value = "Latest Version Date";
+        eolWorksheet.Cell(1, 9).Value = "License";
+        eolWorksheet.Cell(1, 10).Value = "License URL";
+        eolWorksheet.Cell(1, 11).Value = "Recommended Action";
+
+        eolWorksheet.Row(1).Style.Font.Bold = true;
+        eolWorksheet.Row(1).Style.Fill.BackgroundColor = XLColor.LightGray;
+        eolWorksheet.Row(1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        var row = 2;
+        foreach (var item in eolFindings)
+        {
+            eolWorksheet.Cell(row, 1).Value = item.PackageId;
+            eolWorksheet.Cell(row, 2).Value = item.Repository;
+            eolWorksheet.Cell(row, 3).Value = item.Project;
+            eolWorksheet.Cell(row, 4).Value = item.CurrentVersion;
+            eolWorksheet.Cell(row, 5).Value = item.VersionDate;
+            eolWorksheet.Cell(row, 6).Value = item.AgeDays;
+            eolWorksheet.Cell(row, 7).Value = item.LatestVersion;
+            eolWorksheet.Cell(row, 8).Value = item.LatestVersionDate;
+            eolWorksheet.Cell(row, 9).Value = item.License;
+            eolWorksheet.Cell(row, 10).Value = item.LicenseUrl;
+            eolWorksheet.Cell(row, 11).Value = item.RecommendedAction;
+            row++;
+        }
+
+        eolWorksheet.ColumnsUsed().AdjustToContents();
+        var dataRange = eolWorksheet.Range(1, 1, Math.Max(1, row - 1), 11);
+        dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        eolWorksheet.Range(1, 1, 1, 11).SetAutoFilter();
     }
 }

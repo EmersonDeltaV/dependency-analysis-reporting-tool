@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DART.Core.DependencyInjection;
 
-public static class CoreServiceCollectionExtensions
+public static class DartCoreServiceCollectionExtensions
 {
-    public static IServiceCollection AddCore(this IServiceCollection services)
+    public static IServiceCollection AddDartCore(this IServiceCollection services)
     {
         services.AddSingleton<IBlackduckFindingCollector, BlackduckFindingCollector>();
         services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();

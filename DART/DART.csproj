@@ -5,6 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>DART.Console</AssemblyName>
+    <RootNamespace>DART.Console</RootNamespace>
 	<PublishSingleFile>true</PublishSingleFile>
 	<SelfContained>true</SelfContained>
 	<PublishReadyToRun>true</PublishReadyToRun>
@@ -28,8 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DART.Core\DART.Core.csproj" />
-    <ProjectReference Include="..\DART.BlackduckAnalysis\DART.BlackduckAnalysis.csproj" />
-    <ProjectReference Include="..\DART.EOLAnalysis\DART.EOLAnalysis.csproj" />
+    <ProjectReference Include="..\DART.ReportGenerator\DART.ReportGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

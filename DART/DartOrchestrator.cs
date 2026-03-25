@@ -1,9 +1,13 @@
 using ClosedXML.Excel;
 using DART.BlackduckAnalysis;
+using DART.Core.Contracts;
+using DART.Core.Services;
+using CoreRowDetails = DART.Core.Models.RowDetails;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Models;
 using DART.Exceptions;
 using DART.Models;
+using DART.ReportGenerator.Interfaces;
 using DART.Services.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +21,8 @@ namespace DART
         private readonly ICsvService _csvService;
         private readonly IExcelService _excelService;
         private readonly IEOLAnalysisService _eolAnalysisService;
+        private readonly IAnalysisOrchestrator? _coreAnalysisOrchestrator;
+        private readonly IReportGenerator? _reportGenerator;
         private readonly ILogger<DartOrchestrator> _logger;
         private readonly Config _config;
         private readonly IHostApplicationLifetime _lifetime;
@@ -35,7 +41,9 @@ namespace DART
                                 IExcelService excelService,
                                 IEOLAnalysisService eolAnalysisService,
                                 IHostApplicationLifetime lifetime,
-                                ILogger<DartOrchestrator> logger)
+                                ILogger<DartOrchestrator> logger,
+                                IAnalysisOrchestrator? coreAnalysisOrchestrator = null,
+                                IReportGenerator? reportGenerator = null)
         {
             _blackduckReportGenerator = blackduckReportGenerator;
             _config = configOptions.Value ?? throw new ConfigException("Failed to load configuration");
@@ -44,6 +52,8 @@ namespace DART
             _eolAnalysisService = eolAnalysisService;
             _lifetime = lifetime;
             _logger = logger;
+            _coreAnalysisOrchestrator = coreAnalysisOrchestrator;
+            _reportGenerator = reportGenerator;
 
             // Ensure feature toggles are non-null to simplify checks
             _config.FeatureToggles ??= new FeatureToggles();
@@ -87,26 +97,21 @@ namespace DART
             {
                 _logger.LogInformation("Starting analysis...");
 
-                if (!IsBlackduckEnabled)
+                if (_coreAnalysisOrchestrator is null || _reportGenerator is null)
                 {
-                    _logger.LogInformation("Black Duck analysis disabled by feature toggle; skipping Black Duck steps.");
-                    await RunEolOnlyFlowAsync(cancellationToken);
+                    await RunLegacyFlowAsync(cancellationToken);
                     return;
                 }
 
                 if (HasBothBlackduckResults)
                 {
-                    RunComparisonFlow();
+                    _reportGenerator.CompareCurrentWithPrevious(
+                        _config.BlackduckConfiguration.CurrentResults,
+                        _config.BlackduckConfiguration.PreviousResults);
                     return;
                 }
 
-                await RunInitialReportFlowAsync(cancellationToken);
-
-                // After initial flow, if we now have both previous and current results, run comparison
-                if (HasBothBlackduckResults)
-                {
-                    RunComparisonFlow();
-                }
+                await RunCoreOrchestrationFlowAsync(cancellationToken);
             }
             catch (HttpRequestException ex)
             {
@@ -132,6 +137,80 @@ namespace DART
 
         public Task StopAsync(CancellationToken cancellationToken)
             => Task.CompletedTask;
+
+        private async Task RunLegacyFlowAsync(CancellationToken cancellationToken)
+        {
+            if (!IsBlackduckEnabled)
+            {
+                _logger.LogInformation("Black Duck analysis disabled by feature toggle; skipping Black Duck steps.");
+                await RunEolOnlyFlowAsync(cancellationToken);
+                return;
+            }
+
+            if (HasBothBlackduckResults)
+            {
+                RunComparisonFlow();
+                return;
+            }
+
+            await RunInitialReportFlowAsync(cancellationToken);
+
+            if (HasBothBlackduckResults)
+            {
+                RunComparisonFlow();
+            }
+        }
+
+        private async Task RunCoreOrchestrationFlowAsync(CancellationToken cancellationToken)
+        {
+            var enableEolAnalysis =
+                _config.FeatureToggles.EnableCSharpAnalysis ||
+                _config.FeatureToggles.EnableNpmAnalysis;
+
+            var request = new AnalysisRequest
+            {
+                EnableBlackduckAnalysis = _config.FeatureToggles.EnableBlackduckAnalysis,
+                EnableEolAnalysis = enableEolAnalysis
+            };
+
+            var result = await _coreAnalysisOrchestrator!.RunAsync(request, cancellationToken);
+
+            foreach (var issue in result.Issues)
+            {
+                _logger.LogWarning("[CoreAnalysis] {Source}: {Message}", issue.Source, issue.Message);
+            }
+
+            if (!request.EnableBlackduckAnalysis && !request.EnableEolAnalysis)
+            {
+                return;
+            }
+
+            var rows = result.BlackduckFindings.Select(finding => new CoreRowDetails
+            {
+                ApplicationName = finding.ApplicationName,
+                SoftwareComponent = finding.SoftwareComponent,
+                Version = finding.Version,
+                SecurityRisk = finding.SecurityRisk,
+                VulnerabilityId = finding.VulnerabilityId,
+                RecommendedFix = finding.RecommendedFix,
+                MatchType = finding.MatchType
+            }).ToList();
+
+            var appCode = Environment.GetEnvironmentVariable("DART_APP_CODE") ?? "app";
+            var reportPath = _reportGenerator!.GenerateCurrentFormatReport(
+                rows,
+                result.EolFindings,
+                _config.ReportConfiguration.OutputFilePath,
+                appCode,
+                _config.ReportConfiguration.ProductName,
+                _config.ReportConfiguration.ProductVersion,
+                _config.ReportConfiguration.ProductIteration);
+
+            if (request.EnableBlackduckAnalysis && string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
+            {
+                _config.BlackduckConfiguration.CurrentResults = reportPath;
+            }
+        }
 
         private void RunComparisonFlow()
         {

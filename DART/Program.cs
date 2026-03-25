@@ -1,9 +1,13 @@
 using DART;
 using DART.BlackduckAnalysis;
+using DART.Core.DependencyInjection;
+using DART.Core.Services;
 using DART.EOLAnalysis;
 using DART.EOLAnalysis.Clients;
 using DART.EOLAnalysis.Services;
 using DART.Models;
+using DART.ReportGenerator.Interfaces;
+using DART.ReportGenerator.Services;
 using DART.Services.Implementation;
 using DART.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -18,12 +22,7 @@ class Program
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("config.json")
-            .AddJsonFile($"config.{Environment.GetEnvironmentVariable("DART_APP_CODE")}.json", optional: true)
-            .AddEnvironmentVariables(prefix: "DART_")
-            .Build();
+        var configuration = ConfigurationFactory.BuildConfiguration(Directory.GetCurrentDirectory());
 
         builder.Configuration.AddConfiguration(configuration);
 
@@ -57,6 +56,10 @@ class Program
         builder.Services.Configure<Config>(configuration);
         // Register BlackduckConfiguration separately from the nested Config property
         builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
+        builder.Services.AddSingleton<IBlackduckAnalyzer, BlackduckAnalyzerAdapter>();
+        builder.Services.AddSingleton<IEolAnalyzer, EolAnalyzerAdapter>();
+        builder.Services.AddDartCore();
+        builder.Services.AddSingleton<IReportGenerator, ReportGenerator>();
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
         builder.Services.AddSingleton<ICsvService, CsvService>();
@@ -77,5 +80,23 @@ class Program
         using IHost host = builder.Build();
 
         await host.RunAsync();
+    }
+}
+
+namespace DART
+{
+    public static class ConfigurationFactory
+    {
+        public static IConfiguration BuildConfiguration(string basePath)
+        {
+            var appCode = Environment.GetEnvironmentVariable("DART_APP_CODE");
+
+            return new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("config.json")
+                .AddJsonFile($"config.{appCode}.json", optional: true)
+                .AddEnvironmentVariables(prefix: "DART_")
+                .Build();
+        }
     }
 }

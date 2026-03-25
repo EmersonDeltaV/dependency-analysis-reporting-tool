@@ -63,7 +63,7 @@ public class AnalysisOrchestratorTests
         services.AddSingleton(Substitute.For<IBlackduckAnalyzer>());
         services.AddSingleton(Substitute.For<IEolAnalyzer>());
 
-        services.AddCore();
+        services.AddDartCore();
 
         var provider = services.BuildServiceProvider();
         var orchestrator = provider.GetService<IAnalysisOrchestrator>();
