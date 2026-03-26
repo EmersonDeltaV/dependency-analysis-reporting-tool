@@ -2,7 +2,6 @@ using DART.BlackduckAnalysis;
 using DART.Console;
 using DART.Core;
 using DART.EOLAnalysis;
-using DART.Console.Exceptions;
 using DART.ReportGenerator;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

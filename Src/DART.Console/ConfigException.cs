@@ -1,4 +1,4 @@
-namespace DART.Console.Exceptions
+namespace DART.Console
 {
     public class ConfigException : Exception
     {

@@ -1,4 +1,3 @@
-using DART.Console.Exceptions;
 using DART.Core;
 using DART.ReportGenerator;
 using Microsoft.Extensions.Hosting;

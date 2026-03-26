@@ -46,12 +46,12 @@ class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
-        builder.Services.AddDartCore();
+        builder.Services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();
         builder.Services.AddBlackduckAnalysis();
         builder.Services.AddEolAnalysis();
         builder.Services.AddReportGenerator();
 
-        builder.Services.Configure<DART.Console.Config>(configuration);
+        builder.Services.Configure<Config>(configuration);
         // Register BlackduckConfiguration separately from the nested Config property
         builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
         builder.Services.Configure<ReportConfiguration>(configuration.GetSection("ReportConfiguration"));
@@ -63,23 +63,5 @@ class Program
         using IHost host = builder.Build();
 
         await host.RunAsync();
-    }
-}
-
-namespace DART.Console
-{
-    public static class ConfigurationFactory
-    {
-        public static IConfiguration BuildConfiguration(string basePath)
-        {
-            var appCode = Environment.GetEnvironmentVariable("DART_APP_CODE");
-
-            return new ConfigurationBuilder()
-                .SetBasePath(basePath)
-                .AddJsonFile("config.json")
-                .AddJsonFile($"config.{appCode}.json", optional: true)
-                .AddEnvironmentVariables(prefix: "DART_")
-                .Build();
-        }
     }
 }

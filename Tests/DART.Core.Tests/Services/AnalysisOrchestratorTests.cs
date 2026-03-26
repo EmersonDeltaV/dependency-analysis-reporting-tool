@@ -54,14 +54,14 @@ public class AnalysisOrchestratorTests
     }
 
     [Fact]
-    public void AddCore_ShouldRegisterOrchestrator()
+    public void DirectRegistration_ShouldRegisterOrchestrator()
     {
         var services = new ServiceCollection();
 
         services.AddSingleton(Substitute.For<IBlackduckAnalyzer>());
         services.AddSingleton(Substitute.For<IEolAnalyzer>());
 
-        services.AddDartCore();
+        services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();
 
         var provider = services.BuildServiceProvider();
         var orchestrator = provider.GetService<IAnalysisOrchestrator>();

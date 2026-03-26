@@ -10,11 +10,11 @@ namespace DART.Tests.DART.Core.DependencyInjection;
 public class DartCoreCompositionRegistrationTests
 {
     [Fact]
-    public void AddDartCore_ShouldRegisterOnlyOrchestrator()
+    public void DirectRegistration_ShouldRegisterOnlyOrchestrator()
     {
         var services = new ServiceCollection();
 
-        services.AddDartCore();
+        services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();
 
         AssertContainsRegistrationFor<IAnalysisOrchestrator>(services);
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IBlackduckAnalyzer));
