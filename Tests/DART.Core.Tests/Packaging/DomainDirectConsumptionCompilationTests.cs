@@ -2,7 +2,7 @@ using System.Xml.Linq;
 using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
 
-namespace DART.Tests.Packaging;
+namespace DART.Core.Tests.Packaging;
 
 public sealed class DomainDirectConsumptionCompilationTests
 {

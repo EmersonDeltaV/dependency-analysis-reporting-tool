@@ -12,8 +12,4 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DART.BlackduckAnalysis\DART.BlackduckAnalysis.csproj" />
-    <ProjectReference Include="..\DART.EOLAnalysis\DART.EOLAnalysis.csproj" />
-  </ItemGroup>
 </Project>

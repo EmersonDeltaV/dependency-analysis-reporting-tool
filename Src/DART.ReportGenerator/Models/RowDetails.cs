@@ -1,4 +1,4 @@
-namespace DART.Core;
+namespace DART.ReportGenerator;
 
 public sealed class RowDetails
 {

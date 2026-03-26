@@ -4,7 +4,6 @@ using DART.ReportGenerator;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using CoreRowDetails = DART.Core.RowDetails;
 
 namespace DART.Console
 {
@@ -134,7 +133,7 @@ namespace DART.Console
                 return;
             }
 
-            var rows = result.BlackduckFindings.Select(finding => new CoreRowDetails
+            var rows = result.BlackduckFindings.Select(finding => new RowDetails
             {
                 ApplicationName = finding.ApplicationName,
                 SoftwareComponent = finding.SoftwareComponent,

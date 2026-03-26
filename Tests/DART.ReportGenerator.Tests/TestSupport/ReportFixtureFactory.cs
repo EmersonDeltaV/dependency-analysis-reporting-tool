@@ -1,4 +1,4 @@
-using DART.Core;
+using DART.ReportGenerator;
 
 namespace DART.Tests.DART.ReportGenerator.TestSupport;
 

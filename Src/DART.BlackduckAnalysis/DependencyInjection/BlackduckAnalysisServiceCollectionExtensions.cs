@@ -1,3 +1,4 @@
+using DART.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -7,6 +8,7 @@ public static class BlackduckAnalysisServiceCollectionExtensions
 {
     public static IServiceCollection AddBlackduckAnalysis(this IServiceCollection services)
     {
+        services.TryAddSingleton<IBlackduckAnalyzer, BlackduckAnalyzerAdapter>();
         services.TryAddSingleton<IBlackduckFindingCollector, BlackduckFindingCollector>();
         services.TryAddSingleton<IBlackduckReportGenerator, BlackduckReportGenerator>();
         services.TryAddSingleton<IBlackduckReportService, BlackduckReportService>();

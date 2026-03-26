@@ -51,9 +51,12 @@ class Program
         builder.Services.AddEolAnalysis();
         builder.Services.AddReportGenerator();
 
-        builder.Services.Configure<Config>(configuration);
+        builder.Services.Configure<DART.Console.Config>(configuration);
         // Register BlackduckConfiguration separately from the nested Config property
         builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
+        builder.Services.Configure<ReportConfiguration>(configuration.GetSection("ReportConfiguration"));
+        builder.Services.Configure<EOLAnalysisConfig>(configuration.GetSection("EOLAnalysis"));
+        builder.Services.Configure<FeatureToggles>(configuration.GetSection("FeatureToggles"));
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
 

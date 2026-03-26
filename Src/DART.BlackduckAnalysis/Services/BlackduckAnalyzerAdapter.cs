@@ -1,30 +1,32 @@
 using System.Text.RegularExpressions;
-using DART.BlackduckAnalysis;
-using DART.EOLAnalysis;
+using DART.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DART.Core;
+namespace DART.BlackduckAnalysis;
 
-public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
+public sealed class BlackduckAnalyzerAdapter : IBlackduckAnalyzer
 {
     private readonly IBlackduckReportGenerator _blackduckReportGenerator;
     private readonly IBlackduckApiService _blackduckApiService;
     private readonly IBlackduckFindingCollector _collector;
-    private readonly Config _config;
-    private readonly ILogger<DartCoreBlackduckAnalyzerAdapter> _logger;
+    private readonly BlackduckConfiguration _blackduckConfiguration;
+    private readonly ReportConfiguration _reportConfiguration;
+    private readonly ILogger<BlackduckAnalyzerAdapter> _logger;
 
-    public DartCoreBlackduckAnalyzerAdapter(
+    public BlackduckAnalyzerAdapter(
         IBlackduckReportGenerator blackduckReportGenerator,
         IBlackduckApiService blackduckApiService,
-        IOptions<Config> configOptions,
+        IOptions<BlackduckConfiguration> blackduckOptions,
+        IOptions<ReportConfiguration> reportOptions,
         IBlackduckFindingCollector collector,
-        ILogger<DartCoreBlackduckAnalyzerAdapter> logger)
+        ILogger<BlackduckAnalyzerAdapter> logger)
     {
         _blackduckReportGenerator = blackduckReportGenerator;
         _blackduckApiService = blackduckApiService;
         _collector = collector;
-        _config = configOptions.Value;
+        _blackduckConfiguration = blackduckOptions.Value;
+        _reportConfiguration = reportOptions.Value;
         _logger = logger;
     }
 
@@ -35,7 +37,7 @@ public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
             return Array.Empty<BlackduckFinding>();
         }
 
-        _blackduckReportGenerator.SetRuntimeConfig(_config.BlackduckConfiguration, _config.ReportConfiguration.OutputFilePath);
+        _blackduckReportGenerator.SetRuntimeConfig(_blackduckConfiguration, _reportConfiguration.OutputFilePath);
 
         try
         {
@@ -56,14 +58,14 @@ public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
             return Array.Empty<BlackduckFinding>();
         }
 
-        var latestVersions = await _blackduckApiService.GetLatestProjectVersion(_config.BlackduckConfiguration);
-        var configuredVersions = _config.BlackduckConfiguration.BlackduckRepositories
+        var latestVersions = await _blackduckApiService.GetLatestProjectVersion(_blackduckConfiguration);
+        var configuredVersions = _blackduckConfiguration.BlackduckRepositories
             .ToDictionary(repository => repository.Id, repository => repository.Versions);
 
         var options = new BlackduckCollectorOptions
         {
-            IncludeTransitiveDependency = _config.BlackduckConfiguration.IncludeTransitiveDependency,
-            IncludeRecommendedFix = _config.BlackduckConfiguration.IncludeRecommendedFix,
+            IncludeTransitiveDependency = _blackduckConfiguration.IncludeTransitiveDependency,
+            IncludeRecommendedFix = _blackduckConfiguration.IncludeRecommendedFix,
             LatestVersions = latestVersions,
             ConfiguredVersions = configuredVersions
         };
@@ -103,7 +105,7 @@ public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
             var collected = await _collector.CollectAsync(
                 rows,
                 options,
-                (vulnerabilityId, ct) => _blackduckApiService.GetRecommendedFix(_config.BlackduckConfiguration, vulnerabilityId),
+                (vulnerabilityId, ct) => _blackduckApiService.GetRecommendedFix(_blackduckConfiguration, vulnerabilityId),
                 cancellationToken);
 
             findings.AddRange(collected.Select(MapToCoreFinding));
@@ -114,7 +116,7 @@ public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
 
     private string[] GetCsvFiles()
     {
-        var reportFolderPath = Path.Combine(_config.ReportConfiguration.OutputFilePath, BlackduckConfiguration.DownloadsFolderName);
+        var reportFolderPath = Path.Combine(_reportConfiguration.OutputFilePath, BlackduckConfiguration.DownloadsFolderName);
         if (!Directory.Exists(reportFolderPath))
         {
             return Array.Empty<string>();
@@ -222,49 +224,5 @@ public sealed class DartCoreBlackduckAnalyzerAdapter : IBlackduckAnalyzer
             VulnerabilityId >= 0 &&
             MatchType >= 0 &&
             Version >= 0;
-    }
-}
-
-public sealed class DartCoreEolAnalyzerAdapter : IEolAnalyzer
-{
-    private readonly IEOLAnalysisService _eolAnalysisService;
-    private readonly Config _config;
-
-    public DartCoreEolAnalyzerAdapter(IEOLAnalysisService eolAnalysisService, IOptions<Config> configOptions)
-    {
-        _eolAnalysisService = eolAnalysisService;
-        _config = configOptions.Value;
-    }
-
-    public async Task<IReadOnlyCollection<EolFinding>> AnalyzeAsync(AnalysisRequest request, CancellationToken cancellationToken)
-    {
-        var eolConfig = _config.EOLAnalysis;
-        if (!request.EnableEolAnalysis || eolConfig.Repositories.Count == 0)
-        {
-            return Array.Empty<EolFinding>();
-        }
-
-        var eolToggles = new EolFeatureToggles
-        {
-            EnableCSharpAnalysis = _config.FeatureToggles.EnableCSharpAnalysis,
-            EnableNpmAnalysis = _config.FeatureToggles.EnableNpmAnalysis,
-            IncludeNpmDevDependencies = _config.FeatureToggles.IncludeNpmDevDependencies
-        };
-
-        var results = await _eolAnalysisService.AnalyzeRepositoriesAsync(eolConfig, eolToggles, cancellationToken);
-        return results.Select(item => new EolFinding
-        {
-            PackageId = item.Id,
-            Repository = item.Repository,
-            Project = item.Project,
-            CurrentVersion = item.Version,
-            VersionDate = item.VersionDate,
-            AgeDays = item.Age,
-            LatestVersion = item.LatestVersion,
-            LatestVersionDate = item.LatestVersionDate,
-            License = item.License,
-            LicenseUrl = item.LicenseUrl,
-            RecommendedAction = item.Action
-        }).ToList();
     }
 }

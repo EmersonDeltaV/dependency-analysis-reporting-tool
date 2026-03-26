@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using CoreRowDetails = global::DART.Core.RowDetails;
+using Config = DART.Console.Config;
 
 namespace DART.Tests.DART.Console;
 
@@ -55,7 +55,7 @@ public class ConsoleHostWiringTests
         {
             coreOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>());
             reportGenerator.GenerateCurrentFormatReport(
-                Arg.Any<IReadOnlyCollection<CoreRowDetails>>(),
+                Arg.Any<IReadOnlyCollection<RowDetails>>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
                 Arg.Any<string>(),
@@ -92,7 +92,7 @@ public class ConsoleHostWiringTests
         await sut.StartAsync(CancellationToken.None);
 
         reportGenerator.DidNotReceive().GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<CoreRowDetails>>(),
+            Arg.Any<IReadOnlyCollection<RowDetails>>(),
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<string>(),

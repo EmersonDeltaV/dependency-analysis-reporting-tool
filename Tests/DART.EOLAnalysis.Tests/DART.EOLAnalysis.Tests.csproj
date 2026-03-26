@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\DART.EOLAnalysis\DART.EOLAnalysis.csproj" />
+    <ProjectReference Include="..\..\Src\DART.Core\DART.Core.csproj" />
   </ItemGroup>
 
 </Project>

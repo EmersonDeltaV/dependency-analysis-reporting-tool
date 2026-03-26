@@ -1,27 +1,24 @@
 using System.Xml.Linq;
 
-namespace DART.Tests.Packaging;
+namespace DART.Core.Tests.Packaging;
 
 public class ProjectReferenceTopologyTests
 {
     [Fact]
-    public void ConsoleProject_ShouldReferenceCoreAndReportGenerator_AndNotReferenceAnalyzerProjectsDirectly()
+    public void ConsoleProject_ShouldReferenceCoreAndReportGenerator()
     {
         var projectReferences = GetProjectReferences(Path.Combine(RepoRoot(), "Src", "DART.Console", "DART.Console.csproj"));
 
         Assert.Contains("..\\DART.Core\\DART.Core.csproj", projectReferences);
         Assert.Contains("..\\DART.ReportGenerator\\DART.ReportGenerator.csproj", projectReferences);
-        Assert.DoesNotContain("..\\DART.BlackduckAnalysis\\DART.BlackduckAnalysis.csproj", projectReferences);
-        Assert.DoesNotContain("..\\DART.EOLAnalysis\\DART.EOLAnalysis.csproj", projectReferences);
     }
 
     [Fact]
-    public void CoreProject_ShouldReferenceAnalyzerProjects()
+    public void CoreProject_ShouldHaveNoProjectReferences()
     {
         var projectReferences = GetProjectReferences(Path.Combine(RepoRoot(), "Src", "DART.Core", "DART.Core.csproj"));
 
-        Assert.Contains("..\\DART.BlackduckAnalysis\\DART.BlackduckAnalysis.csproj", projectReferences);
-        Assert.Contains("..\\DART.EOLAnalysis\\DART.EOLAnalysis.csproj", projectReferences);
+        Assert.Empty(projectReferences);
     }
 
     [Fact]
@@ -31,6 +28,18 @@ public class ProjectReferenceTopologyTests
 
         Assert.DoesNotContain("..\\DART.BlackduckAnalysis\\DART.BlackduckAnalysis.csproj", projectReferences);
         Assert.DoesNotContain("..\\DART.EOLAnalysis\\DART.EOLAnalysis.csproj", projectReferences);
+        Assert.Contains("..\\DART.Core\\DART.Core.csproj", projectReferences);
+    }
+
+    [Theory]
+    [InlineData("Src/DART.BlackduckAnalysis/DART.BlackduckAnalysis.csproj")]
+    [InlineData("Src/DART.EOLAnalysis/DART.EOLAnalysis.csproj")]
+    [InlineData("Src/DART.ReportGenerator/DART.ReportGenerator.csproj")]
+    public void DomainProjects_ShouldReferenceCore(string relativeProjectPath)
+    {
+        var projectReferences = GetProjectReferences(Path.Combine(RepoRoot(), relativeProjectPath));
+
+        Assert.Contains("..\\DART.Core\\DART.Core.csproj", projectReferences);
     }
 
     [Fact]

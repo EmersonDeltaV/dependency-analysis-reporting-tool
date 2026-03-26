@@ -79,7 +79,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
                 });
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Single(result);
@@ -120,7 +120,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithContent("/src/App/App.csproj", projectContent);
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Empty(result);
@@ -150,7 +150,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Util", "1.2.3"), ("Emerson.Utility", "2.0.0"), ("Other", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             // emerson.uti? should match both Util and Utility (case-insensitive, '?' wildcard)
@@ -202,7 +202,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -240,7 +240,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"), ("Newtonsoft.Json", "13.0.1"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Equal(2, result.Count);
@@ -275,7 +275,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var project = CreateProjectWithPackages(("Emerson.Core", "1.0.0"));
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Single(result);
@@ -315,7 +315,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             };
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles { IncludeNpmDevDependencies = false }, CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles { IncludeNpmDevDependencies = false }, CancellationToken.None);
 
             // Assert
             Assert.Single(result);
@@ -349,7 +349,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
 
             // Act / Assert
             await Assert.ThrowsAsync<NotSupportedException>(() =>
-                svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None));
+                svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None));
         }
 
         [Fact]
@@ -375,7 +375,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             };
 
             // Act
-            var result = await svc.AnalyzeProjectAsync(project, config, new FeatureToggles(), CancellationToken.None);
+            var result = await svc.AnalyzeProjectAsync(project, config, new EolFeatureToggles(), CancellationToken.None);
 
             // Assert
             Assert.Empty(result);

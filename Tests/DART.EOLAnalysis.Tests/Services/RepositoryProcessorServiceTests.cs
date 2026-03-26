@@ -13,7 +13,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var client = Substitute.For<IAzureDevOpsClient>();
             var repository = CreateRepository();
             var config = CreateConfig();
-            var toggles = new FeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = true };
+            var toggles = new EolFeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = true };
 
             client.FindDirectoryPackagesPropsFilesAsync(Arg.Any<Repository>(), Arg.Any<CancellationToken>())
                 .Returns([
@@ -74,7 +74,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var client = Substitute.For<IAzureDevOpsClient>();
             var repository = CreateRepository();
             var config = CreateConfig();
-            var toggles = new FeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
+            var toggles = new EolFeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
 
             client.FindDirectoryPackagesPropsFilesAsync(Arg.Any<Repository>(), Arg.Any<CancellationToken>())
                 .Returns(new List<GitItem>());
@@ -94,7 +94,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var client = Substitute.For<IAzureDevOpsClient>();
             var repository = CreateRepository();
             var config = CreateConfig();
-            var toggles = new FeatureToggles { EnableCSharpAnalysis = false, EnableNpmAnalysis = true };
+            var toggles = new EolFeatureToggles { EnableCSharpAnalysis = false, EnableNpmAnalysis = true };
 
             client.FindPackageJsonFilesAsync(Arg.Any<Repository>(), Arg.Any<CancellationToken>())
                 .Returns((List<GitItem>)null!);
@@ -112,7 +112,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var client = Substitute.For<IAzureDevOpsClient>();
             var repository = CreateRepository();
             var config = CreateConfig();
-            var toggles = new FeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
+            var toggles = new EolFeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
 
             client.FindDirectoryPackagesPropsFilesAsync(Arg.Any<Repository>(), Arg.Any<CancellationToken>())
                 .Returns(new List<GitItem>());
@@ -148,7 +148,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             var client = Substitute.For<IAzureDevOpsClient>();
             var repository = CreateRepository();
             var config = CreateConfig();
-            var toggles = new FeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
+            var toggles = new EolFeatureToggles { EnableCSharpAnalysis = true, EnableNpmAnalysis = false };
 
             client.FindDirectoryPackagesPropsFilesAsync(Arg.Any<Repository>(), Arg.Any<CancellationToken>())
                 .Returns([
@@ -196,7 +196,7 @@ namespace DART.Tests.DART.EOLAnalysis.Services
             };
 
             await Assert.ThrowsAnyAsync<Exception>(() =>
-                sut.ProcessRepositoryAsync(repository, client, CreateConfig(), new FeatureToggles(), CancellationToken.None));
+                sut.ProcessRepositoryAsync(repository, client, CreateConfig(), new EolFeatureToggles(), CancellationToken.None));
         }
 
         private static RepositoryProcessorService CreateService()
