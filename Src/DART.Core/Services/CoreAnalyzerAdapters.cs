@@ -244,7 +244,14 @@ public sealed class DartCoreEolAnalyzerAdapter : IEolAnalyzer
             return Array.Empty<EolFinding>();
         }
 
-        var results = await _eolAnalysisService.AnalyzeRepositoriesAsync(eolConfig, _config.FeatureToggles, cancellationToken);
+        var eolToggles = new EolFeatureToggles
+        {
+            EnableCSharpAnalysis = _config.FeatureToggles.EnableCSharpAnalysis,
+            EnableNpmAnalysis = _config.FeatureToggles.EnableNpmAnalysis,
+            IncludeNpmDevDependencies = _config.FeatureToggles.IncludeNpmDevDependencies
+        };
+
+        var results = await _eolAnalysisService.AnalyzeRepositoriesAsync(eolConfig, eolToggles, cancellationToken);
         return results.Select(item => new EolFinding
         {
             PackageId = item.Id,

@@ -20,7 +20,7 @@ namespace DART.EOLAnalysis
             Repository repository,
             IAzureDevOpsClient azureDevOpsClient,
             EOLAnalysisConfig config,
-            FeatureToggles toggles,
+            EolFeatureToggles toggles,
             CancellationToken cancellationToken = default)
         {
             try

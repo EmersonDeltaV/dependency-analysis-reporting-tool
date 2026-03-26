@@ -26,7 +26,7 @@ namespace DART.EOLAnalysis
             _projectAnalysis = projectAnalysis;
         }
 
-        public async Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, FeatureToggles toggles, CancellationToken cancellationToken = default)
+        public async Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, EolFeatureToggles toggles, CancellationToken cancellationToken = default)
         {
             var results = new List<PackageData>();
 

@@ -2,7 +2,7 @@ namespace DART.EOLAnalysis
 {
     /// <summary>
     /// Provides End-of-Life (EOL) analysis for package dependencies across multiple repositories.
-    /// Supports C# (.csproj / NuGet) and npm (package.json) ecosystems, controlled via <see cref="FeatureToggles"/>.
+    /// Supports C# (.csproj / NuGet) and npm (package.json) ecosystems, controlled via <see cref="EolFeatureToggles"/>.
     /// </summary>
     public interface IEOLAnalysisService
     {
@@ -13,6 +13,6 @@ namespace DART.EOLAnalysis
         /// <param name="toggles">Feature toggles controlling which ecosystems (C#, npm) to analyse.</param>
         /// <param name="cancellationToken">Token to cancel the analysis operation.</param>
         /// <returns>A list of analyzed package data with version information and recommendations.</returns>
-        Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, FeatureToggles toggles, CancellationToken cancellationToken = default);
+        Task<List<PackageData>> AnalyzeRepositoriesAsync(EOLAnalysisConfig config, EolFeatureToggles toggles, CancellationToken cancellationToken = default);
     }
 }

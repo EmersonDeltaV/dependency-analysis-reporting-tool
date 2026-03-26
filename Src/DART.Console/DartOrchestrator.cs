@@ -1,11 +1,10 @@
-using DART.Core;
-using CoreRowDetails = DART.Core.RowDetails;
-using DART.EOLAnalysis;
 using DART.Console.Exceptions;
+using DART.Core;
 using DART.ReportGenerator;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using CoreRowDetails = DART.Core.RowDetails;
 
 namespace DART.Console
 {

@@ -15,7 +15,7 @@ namespace DART.EOLAnalysis
         public List<Repository> Repositories { get; set; } = new List<Repository>();
 
         /// <summary>
-        /// Configuration for fetching recommended fixes for vulnerable dependencies. This can be used to determine if a vulnerable dependency has a non-vulnerable version available, which may impact EOL status. Required if IncludeRecommendedFix is true in BlackduckConfiguration. If not needed, this can be left with default values and the service will skip fetching recommended fixes.
+        /// Configuration for fetching recommended fixes for vulnerable dependencies. This can be used to determine if a vulnerable dependency has a non-vulnerable version available, which may impact EOL status. Required if recommended-fix lookup is enabled by the consuming application. If not needed, this can be left with default values and the service will skip fetching recommended fixes.
         /// </summary>
         public PackageRecommendationConfig PackageRecommendation { get; set; } = new PackageRecommendationConfig();
 
@@ -28,28 +28,5 @@ namespace DART.EOLAnalysis
         /// Channel capacity for bounded channel used in I/O operations. This limits the number of items buffered in memory for processing. Defaults to 10.
         /// </summary>
         public int BoundedCapacity { get; set; } = 10;
-    }
-
-    public class FeatureToggles
-    {
-        /// <summary>
-        /// When true, runs all Black Duck download, processing, and comparison steps. When false, Black Duck steps are skipped. Defaults to true. Black Duck configuration is only required when this is true.
-        /// </summary>
-        public bool EnableBlackduckAnalysis { get; set; } = true;
-
-        /// <summary>
-        /// When true, adds an EOL analysis sheet for CSharp projects. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
-        /// </summary>
-        public bool EnableCSharpAnalysis { get; set; } = true;
-
-        /// <summary>
-        /// When true, adds an EOL analysis sheet for NPM projects. Can run standalone (with Black Duck disabled) or alongside Black Duck. Requires EOL repo configuration.
-        /// </summary>
-        public bool EnableNpmAnalysis { get; set; } = true;
-
-        /// <summary>
-        /// When true, includes dev dependencies in NPM EOL analysis. Defaults to false.
-        /// </summary>
-        public bool IncludeNpmDevDependencies { get; set; } = false;
     }
 }

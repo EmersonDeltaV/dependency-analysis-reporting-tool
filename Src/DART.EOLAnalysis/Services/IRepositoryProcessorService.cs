@@ -14,6 +14,6 @@ namespace DART.EOLAnalysis
         /// <param name="toggles">Feature toggles controlling which ecosystems to discover.</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>A list of project information including file paths, content, and project type.</returns>
-        Task<List<ProjectInfo>> ProcessRepositoryAsync(Repository repository, IAzureDevOpsClient azureDevOpsClient, EOLAnalysisConfig config, FeatureToggles toggles, CancellationToken cancellationToken = default);
+        Task<List<ProjectInfo>> ProcessRepositoryAsync(Repository repository, IAzureDevOpsClient azureDevOpsClient, EOLAnalysisConfig config, EolFeatureToggles toggles, CancellationToken cancellationToken = default);
     }
 }

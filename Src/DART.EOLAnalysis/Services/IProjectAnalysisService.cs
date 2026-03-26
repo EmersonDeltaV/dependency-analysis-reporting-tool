@@ -16,7 +16,7 @@ namespace DART.EOLAnalysis
         Task<List<PackageData>> AnalyzeProjectAsync(
             ProjectInfo projectInfo,
             EOLAnalysisConfig config,
-            FeatureToggles toggles,
+            EolFeatureToggles toggles,
             CancellationToken cancellationToken = default);
     }
 }
