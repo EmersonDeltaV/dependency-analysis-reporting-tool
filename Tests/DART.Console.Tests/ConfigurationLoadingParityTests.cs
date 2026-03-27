@@ -61,4 +61,49 @@ public class ConfigurationLoadingParityTests
             }
         }
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void BuildConfiguration_ShouldIgnoreAppSpecificJson_WhenAppCodeIsUnsetOrEmpty(string? appCode)
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "dart-config-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        var previousAppCode = Environment.GetEnvironmentVariable("DART_APP_CODE");
+
+        try
+        {
+            File.WriteAllText(Path.Combine(tempDir, "config.json"), """
+            {
+              "BlackduckConfiguration": {
+                "Token": "base-token"
+              }
+            }
+            """);
+
+            File.WriteAllText(Path.Combine(tempDir, "config..json"), """
+            {
+              "BlackduckConfiguration": {
+                "Token": "unexpected-token"
+              }
+            }
+            """);
+
+            Environment.SetEnvironmentVariable("DART_APP_CODE", appCode);
+
+            var configuration = ConfigurationFactory.BuildConfiguration(tempDir);
+
+            Assert.Equal("base-token", configuration["BlackduckConfiguration:Token"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DART_APP_CODE", previousAppCode);
+
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
 }

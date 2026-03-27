@@ -30,4 +30,24 @@ public class ConfigPathResolutionTests
 
         Assert.Equal(absolutePath, config.OutputFilePath);
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void OutputFilePath_ShouldReturnEmpty_WhenUnsetOrWhitespace(string configuredValue)
+    {
+        var config = new ReportConfiguration { OutputFilePath = configuredValue };
+
+        Assert.Equal(string.Empty, config.OutputFilePath);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LogPath_ShouldReturnEmpty_WhenUnsetOrWhitespace(string configuredValue)
+    {
+        var config = new ReportConfiguration { LogPath = configuredValue };
+
+        Assert.Equal(string.Empty, config.LogPath);
+    }
 }

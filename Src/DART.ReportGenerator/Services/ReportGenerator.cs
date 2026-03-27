@@ -5,6 +5,7 @@ namespace DART.ReportGenerator;
 
 public sealed class ReportGenerator : IReportGenerator
 {
+    private const string SecurityRisksWorksheetName = "Black Duck Security Risks";
     private readonly WorkbookComparisonService _comparisonService;
 
     public ReportGenerator()
@@ -20,7 +21,7 @@ public sealed class ReportGenerator : IReportGenerator
     public XLWorkbook BuildWorkbook(IReadOnlyCollection<RowDetails> rows, string productName, string productVersion, string productIteration)
     {
         var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Black Duck Security Risks");
+        var worksheet = workbook.Worksheets.Add(SecurityRisksWorksheetName);
 
         FormatHeader(worksheet, productName, productVersion, productIteration);
 
@@ -87,8 +88,18 @@ public sealed class ReportGenerator : IReportGenerator
         using var currentWorkbook = new XLWorkbook(currentReportPath);
         using var previousWorkbook = new XLWorkbook(previousReportPath);
 
-        var currentWorksheet = currentWorkbook.Worksheet(1);
-        var previousWorksheet = previousWorkbook.Worksheet(1);
+        if (!currentWorkbook.Worksheets.Contains(SecurityRisksWorksheetName))
+        {
+            throw new InvalidOperationException($"Worksheet '{SecurityRisksWorksheetName}' was not found in current report: {currentReportPath}");
+        }
+
+        if (!previousWorkbook.Worksheets.Contains(SecurityRisksWorksheetName))
+        {
+            throw new InvalidOperationException($"Worksheet '{SecurityRisksWorksheetName}' was not found in previous report: {previousReportPath}");
+        }
+
+        var currentWorksheet = currentWorkbook.Worksheet(SecurityRisksWorksheetName);
+        var previousWorksheet = previousWorkbook.Worksheet(SecurityRisksWorksheetName);
 
         _comparisonService.ApplyComparison(currentWorksheet, previousWorksheet, 8);
         currentWorkbook.Save();
@@ -96,9 +107,9 @@ public sealed class ReportGenerator : IReportGenerator
 
     private static void FormatHeader(IXLWorksheet worksheet, string productName, string productVersion, string productIteration)
     {
-        worksheet.Range(1, 1, 1, 11).Merge();
-        worksheet.Range(2, 1, 2, 11).Merge();
-        worksheet.Range(3, 1, 3, 11).Merge();
+        worksheet.Range(1, 1, 1, 12).Merge();
+        worksheet.Range(2, 1, 2, 12).Merge();
+        worksheet.Range(3, 1, 3, 12).Merge();
 
         worksheet.Cell(1, 1).Value = productName;
         worksheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;

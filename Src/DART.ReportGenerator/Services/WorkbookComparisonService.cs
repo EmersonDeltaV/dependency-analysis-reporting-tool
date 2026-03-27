@@ -6,43 +6,24 @@ public sealed class WorkbookComparisonService
 {
     public void ApplyComparison(IXLWorksheet currentWorksheet, IXLWorksheet previousWorksheet, int startRow = 8)
     {
-        const int endMatchColumn = 5;
         const int endColumn = 12;
 
         var maxRow1 = currentWorksheet.LastRowUsed()?.RowNumber() ?? startRow - 1;
         var maxRow2 = previousWorksheet.LastRowUsed()?.RowNumber() ?? startRow - 1;
+        var previousRowsByKey = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var row2 = startRow; row2 <= maxRow2; row2++)
+        {
+            var key = BuildMatchKey(previousWorksheet, row2);
+            previousRowsByKey.TryAdd(key, row2);
+        }
 
         for (var row1 = startRow; row1 <= maxRow1; row1++)
         {
-            var matchingRow2 = -1;
-
-            for (var row2 = startRow; row2 <= maxRow2; row2++)
-            {
-                var allColumnsMatch = true;
-
-                for (var col = 1; col <= endMatchColumn; col++)
-                {
-                    if (col == 3 || col == 4)
-                    {
-                        continue;
-                    }
-
-                    var cell1 = currentWorksheet.Cell(row1, col).Value.ToString();
-                    var cell2 = previousWorksheet.Cell(row2, col).Value.ToString();
-
-                    if (!string.Equals(cell1, cell2, StringComparison.Ordinal))
-                    {
-                        allColumnsMatch = false;
-                        break;
-                    }
-                }
-
-                if (allColumnsMatch)
-                {
-                    matchingRow2 = row2;
-                    break;
-                }
-            }
+            var currentRowKey = BuildMatchKey(currentWorksheet, row1);
+            var matchingRow2 = previousRowsByKey.TryGetValue(currentRowKey, out var matchedRow)
+                ? matchedRow
+                : -1;
 
             currentWorksheet.Cell(row1, 7).Value = matchingRow2 != -1 ? "Yes" : "No";
 
@@ -68,5 +49,13 @@ public sealed class WorkbookComparisonService
         }
 
         currentWorksheet.Columns().AdjustToContents();
+    }
+
+    private static string BuildMatchKey(IXLWorksheet worksheet, int row)
+    {
+        var cell1 = worksheet.Cell(row, 1).Value.ToString();
+        var cell2 = worksheet.Cell(row, 2).Value.ToString();
+        var cell5 = worksheet.Cell(row, 5).Value.ToString();
+        return string.Concat(cell1, "\u001F", cell2, "\u001F", cell5);
     }
 }

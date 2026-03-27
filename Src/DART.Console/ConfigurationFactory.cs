@@ -8,10 +8,16 @@ namespace DART.Console
         {
             var appCode = Environment.GetEnvironmentVariable("DART_APP_CODE");
 
-            return new ConfigurationBuilder()
+            var configurationBuilder = new ConfigurationBuilder()
                 .SetBasePath(basePath)
-                .AddJsonFile("config.json")
-                .AddJsonFile($"config.{appCode}.json", optional: true)
+                .AddJsonFile("config.json");
+
+            if (!string.IsNullOrWhiteSpace(appCode))
+            {
+                configurationBuilder.AddJsonFile($"config.{appCode}.json", optional: true);
+            }
+
+            return configurationBuilder
                 .AddEnvironmentVariables(prefix: "DART_")
                 .Build();
         }

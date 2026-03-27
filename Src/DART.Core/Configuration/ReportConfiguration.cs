@@ -7,18 +7,14 @@ public sealed class ReportConfiguration
 
     public string OutputFilePath
     {
-        get => Path.IsPathRooted(_outputFilePath)
-            ? _outputFilePath
-            : Path.Combine(Directory.GetCurrentDirectory(), _outputFilePath);
-        set => _outputFilePath = value;
+        get => ResolveConfiguredPath(_outputFilePath);
+        set => _outputFilePath = value ?? string.Empty;
     }
 
     public string LogPath
     {
-        get => Path.IsPathRooted(_logPath)
-            ? _logPath
-            : Path.Combine(Directory.GetCurrentDirectory(), _logPath);
-        set => _logPath = value;
+        get => ResolveConfiguredPath(_logPath);
+        set => _logPath = value ?? string.Empty;
     }
 
     public string ProductName { get; set; } = string.Empty;
@@ -26,4 +22,14 @@ public sealed class ReportConfiguration
     public string ProductVersion { get; set; } = string.Empty;
 
     public string ProductIteration { get; set; } = string.Empty;
+
+    private static string ResolveConfiguredPath(string configuredPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath))
+            return string.Empty;
+
+        return Path.IsPathRooted(configuredPath)
+            ? configuredPath
+            : Path.Combine(Directory.GetCurrentDirectory(), configuredPath);
+    }
 }
