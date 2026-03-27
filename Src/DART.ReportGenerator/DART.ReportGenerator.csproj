@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>DART.ReportGenerator</PackageId>
+    <Description>Workbook and comparison report generation components for DART analysis outputs.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.102.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DART.Core\DART.Core.csproj" />
+  </ItemGroup>
+</Project>

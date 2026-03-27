@@ -398,3 +398,12 @@ FodyWeavers.xsd
 *.sln.iml
 
 BlackDuck/
+
+# DART local cleanup artifacts
+/.tmp-dart-obj-locktest/
+/.tmp-resolver-smoke/
+/Src/DART.Console/bin_tmp_locktest/
+/Src/DART.Console/Log_tmp_locktest/
+/Src/DART.Console/DART.csproj.Backup.tmp
+/Src/DART.Console/DART.csproj.user
+/nul
