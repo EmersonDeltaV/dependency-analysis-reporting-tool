@@ -407,3 +407,4 @@ BlackDuck/
 /Src/DART.Console/DART.csproj.Backup.tmp
 /Src/DART.Console/DART.csproj.user
 /nul
+*.lscache
