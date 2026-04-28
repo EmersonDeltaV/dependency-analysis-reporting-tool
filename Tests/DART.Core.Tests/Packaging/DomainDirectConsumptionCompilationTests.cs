@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using DART.BlackduckAnalysis;
 using DART.EOLAnalysis;
+using DART.Runtime;
 
 namespace DART.Core.Tests.Packaging;
 
@@ -11,12 +12,15 @@ public sealed class DomainDirectConsumptionCompilationTests
     {
         var blackduckConfiguration = new BlackduckConfiguration();
         var eolAnalysisConfig = new EOLAnalysisConfig();
+        var runtimeRequest = new DartExecutionRequest();
 
         Assert.NotNull(blackduckConfiguration);
         Assert.NotNull(eolAnalysisConfig);
+        Assert.NotNull(runtimeRequest);
         Assert.Equal(typeof(IBlackduckReportService).Namespace, typeof(BlackduckConfiguration).Namespace);
         Assert.Equal("DART.EOLAnalysis", typeof(IEOLAnalysisService).Namespace);
         Assert.Equal("DART.EOLAnalysis", typeof(EOLAnalysisConfig).Namespace);
+        Assert.Equal("DART.Runtime", typeof(DartExecutionRequest).Namespace);
     }
 
     [Theory]

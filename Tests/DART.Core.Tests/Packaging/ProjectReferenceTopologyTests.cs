@@ -43,6 +43,17 @@ public class ProjectReferenceTopologyTests
     }
 
     [Fact]
+    public void RuntimeProject_ShouldReferenceAllDomainProjects()
+    {
+        var projectReferences = GetProjectReferences(Path.Combine(RepoRoot(), "Src", "DART.Runtime", "DART.Runtime.csproj"));
+
+        Assert.Contains("..\\DART.Core\\DART.Core.csproj", projectReferences);
+        Assert.Contains("..\\DART.BlackduckAnalysis\\DART.BlackduckAnalysis.csproj", projectReferences);
+        Assert.Contains("..\\DART.EOLAnalysis\\DART.EOLAnalysis.csproj", projectReferences);
+        Assert.Contains("..\\DART.ReportGenerator\\DART.ReportGenerator.csproj", projectReferences);
+    }
+
+    [Fact]
     public void CoreProject_ShouldNotContainBlackduckCollectorSources()
     {
         var collectorDirectory = Path.Combine(RepoRoot(), "Src", "DART.Core", "Blackduck");
