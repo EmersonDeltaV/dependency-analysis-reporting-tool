@@ -1,0 +1,79 @@
+name: Publish NuGet Packages
+
+# Triggers:
+#   - Push a version tag (e.g. git tag v1.2.0 && git push origin v1.2.0)
+#   - Manually from the Actions tab with an explicit version input
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to publish (e.g. 1.2.0)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Pack and Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Extract version from the git tag (strips leading 'v') or use the manual input
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "Resolved version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore DependencyAnalysisReportingTool.sln
+
+      - name: Build
+        run: dotnet build DependencyAnalysisReportingTool.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test DependencyAnalysisReportingTool.sln -c Release --no-build
+
+      # Pack only the 5 library projects (Console is an exe and not packable)
+      - name: Pack
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          PACK_ARGS="-c Release --no-build -o artifacts/nuget /p:Version=$VERSION"
+          dotnet pack Src/DART.Core/DART.Core.csproj $PACK_ARGS
+          dotnet pack Src/DART.BlackduckAnalysis/DART.BlackduckAnalysis.csproj $PACK_ARGS
+          dotnet pack Src/DART.EOLAnalysis/DART.EOLAnalysis.csproj $PACK_ARGS
+          dotnet pack Src/DART.ReportGenerator/DART.ReportGenerator.csproj $PACK_ARGS
+          dotnet pack Src/DART.Runtime/DART.Runtime.csproj $PACK_ARGS
+
+      - name: Push packages to NuGet.org
+        run: |
+          SOURCE="https://api.nuget.org/v3/index.json"
+          dotnet nuget push "artifacts/nuget/*.nupkg" \
+            --source "$SOURCE" \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
+          if compgen -G "artifacts/nuget/*.snupkg" > /dev/null; then
+            dotnet nuget push "artifacts/nuget/*.snupkg" \
+              --source "$SOURCE" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --skip-duplicate
+          else
+            echo "No symbol packages to push."
+          fi

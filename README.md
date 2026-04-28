@@ -6,6 +6,15 @@ Black Duck and End-of-Life (EOL) Analysis reports that once took hours or even d
 
 The **Dependency Analysis Report Tool (DART)** is a .NET console application that provides actionable insights by merging vulnerability data with dependency lifecycle information, enabling development teams to make informed decisions about security risks and technical debt every PI.
 
+## Architecture
+
+- `Src/DART.Console` is a thin demo host that owns startup, logging, and host lifetime while delegating execution to the runtime package.
+- `Src/DART.Runtime` owns the reusable host-facing execution facade for request-scoped dependency construction, analysis orchestration, and workbook generation.
+- `Src/DART.Core` owns shared contracts, orchestration, and runtime configuration models.
+- `Src/DART.BlackduckAnalysis`, `Src/DART.EOLAnalysis`, and `Src/DART.ReportGenerator` own their module-specific behavior.
+- `Tests/DART.Core.Tests` covers packaging topology and dependency-boundary guardrails.
+- `Tests/DART.Runtime.Tests` covers runtime package topology, runner orchestration, and request-scoped service-provider wiring.
+
 ## Key Benefits
 
 ### Unified Excel Reports
@@ -37,9 +46,37 @@ The **Dependency Analysis Report Tool (DART)** is a .NET console application tha
 
 https://emerson.stackenterprise.co/articles/4266
 
+### Tests
+
+The test suite is split into project-aligned xUnit projects under `Tests/`:
+
+- `Tests/DART.Console.Tests` - console orchestration, host wiring, and config parity tests
+- `Tests/DART.BlackduckAnalysis.Tests` - Black Duck helper and service tests
+- `Tests/DART.Core.Tests` - core contracts, DI registration, packaging topology, and architecture checks
+- `Tests/DART.EOLAnalysis.Tests` - EOL client, helper, and service tests
+- `Tests/DART.ReportGenerator.Tests` - report generation and workbook comparison tests
+- `Tests/DART.Runtime.Tests` - runtime package topology, runner orchestration, and scope factory tests
+
+Run the full suite from the repository root:
+
+```powershell
+dotnet test -c Debug
+```
+
+Run a specific test project:
+
+```powershell
+dotnet test Tests/DART.Console.Tests/DART.Console.Tests.csproj -c Debug
+dotnet test Tests/DART.BlackduckAnalysis.Tests/DART.BlackduckAnalysis.Tests.csproj -c Debug
+dotnet test Tests/DART.Core.Tests/DART.Core.Tests.csproj -c Debug
+dotnet test Tests/DART.EOLAnalysis.Tests/DART.EOLAnalysis.Tests.csproj -c Debug
+dotnet test Tests/DART.ReportGenerator.Tests/DART.ReportGenerator.Tests.csproj -c Debug
+dotnet test Tests/DART.Runtime.Tests/DART.Runtime.Tests.csproj -c Debug
+```
+
 ## Configuration
 
-Navigate to the `DART/config.json` file and configure the following core settings:
+Navigate to the `Src/DART.Console/config.json` file and configure the following core settings:
 
 ### Report Configuration
 
