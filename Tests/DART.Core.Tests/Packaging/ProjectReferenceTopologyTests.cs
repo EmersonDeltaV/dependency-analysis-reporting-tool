@@ -5,12 +5,15 @@ namespace DART.Core.Tests.Packaging;
 public class ProjectReferenceTopologyTests
 {
     [Fact]
-    public void ConsoleProject_ShouldReferenceCoreAndReportGenerator()
+    public void ConsoleProject_ShouldReferenceRuntimeOnly()
     {
         var projectReferences = GetProjectReferences(Path.Combine(RepoRoot(), "Src", "DART.Console", "DART.Console.csproj"));
 
-        Assert.Contains("..\\DART.Core\\DART.Core.csproj", projectReferences);
-        Assert.Contains("..\\DART.ReportGenerator\\DART.ReportGenerator.csproj", projectReferences);
+        Assert.Contains("..\\DART.Runtime\\DART.Runtime.csproj", projectReferences);
+        Assert.DoesNotContain("..\\DART.Core\\DART.Core.csproj", projectReferences);
+        Assert.DoesNotContain("..\\DART.ReportGenerator\\DART.ReportGenerator.csproj", projectReferences);
+        Assert.DoesNotContain("..\\DART.BlackduckAnalysis\\DART.BlackduckAnalysis.csproj", projectReferences);
+        Assert.DoesNotContain("..\\DART.EOLAnalysis\\DART.EOLAnalysis.csproj", projectReferences);
     }
 
     [Fact]

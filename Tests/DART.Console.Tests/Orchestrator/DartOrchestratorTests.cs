@@ -2,7 +2,7 @@ using DART.BlackduckAnalysis;
 using DART.Console;
 using DART.Core;
 using DART.EOLAnalysis;
-using DART.ReportGenerator;
+using DART.Runtime;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,15 +13,13 @@ namespace DART.Tests.DART.Console;
 
 public class DartOrchestratorTests
 {
-    private readonly IAnalysisOrchestrator _coreAnalysisOrchestrator;
-    private readonly IReportGenerator _reportGenerator;
+    private readonly IDartExecutionRunner _executionRunner;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<DartOrchestrator> _logger;
 
     public DartOrchestratorTests()
     {
-        _coreAnalysisOrchestrator = Substitute.For<IAnalysisOrchestrator>();
-        _reportGenerator = Substitute.For<IReportGenerator>();
+        _executionRunner = Substitute.For<IDartExecutionRunner>();
         _lifetime = Substitute.For<IHostApplicationLifetime>();
         _logger = Substitute.For<ILogger<DartOrchestrator>>();
     }
@@ -34,8 +32,7 @@ public class DartOrchestratorTests
 
         var exception = Assert.Throws<ConfigException>(() => new DartOrchestrator(
             nullOptions,
-            _coreAnalysisOrchestrator,
-            _reportGenerator,
+            _executionRunner,
             _lifetime,
             _logger));
 
@@ -67,8 +64,7 @@ public class DartOrchestratorTests
 
         var exception = Assert.Throws<ConfigException>(() => new DartOrchestrator(
             Options.Create(invalidConfig),
-            _coreAnalysisOrchestrator,
-            _reportGenerator,
+            _executionRunner,
             _lifetime,
             _logger));
 
@@ -85,225 +81,66 @@ public class DartOrchestratorTests
         config.BlackduckConfiguration.BaseUrl = string.Empty;
         config.BlackduckConfiguration.Token = string.Empty;
 
-        var sut = CreateProgram(config);
+        var sut = CreateOrchestrator(config);
 
         Assert.NotNull(sut);
     }
 
     [Fact]
-    public async Task StartAsync_ShouldCompareCurrentWithPrevious_WhenBothResultsProvided()
+    public async Task StartAsync_ShouldDelegateToRuntimeRunner_WithMappedRequest()
     {
-        var config = CreateConfig(enableBlackduck: true, enableCsharp: true, enableNpm: false);
-        config.BlackduckConfiguration.PreviousResults = @"C:\Previous\report.xlsx";
-        config.BlackduckConfiguration.CurrentResults = @"C:\Current\report.xlsx";
-
-        var sut = CreateProgram(config);
-
-        await sut.StartAsync(CancellationToken.None);
-
-        _reportGenerator.Received(1).CompareCurrentWithPrevious(
-            config.BlackduckConfiguration.CurrentResults,
-            config.BlackduckConfiguration.PreviousResults);
-
-        await _coreAnalysisOrchestrator.DidNotReceive().RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task StartAsync_ShouldCallCoreAndGenerateReportWithoutEolOverload_WhenNoEolFindings()
-    {
-        var config = CreateConfig(enableBlackduck: true, enableCsharp: false, enableNpm: false);
-
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new AnalysisResult
+        var config = new Config
+        {
+            ReportConfiguration = new ReportConfiguration
             {
-                BlackduckFindings =
-                [
-                    new BlackduckFinding
-                    {
-                        ApplicationName = "APP01",
-                        SoftwareComponent = "Newtonsoft.Json",
-                        Version = "13.0.3",
-                        SecurityRisk = "HIGH",
-                        VulnerabilityId = "CVE-1",
-                        RecommendedFix = "13.0.4",
-                        MatchType = "Direct Dependency"
-                    }
-                ]
-            });
+                OutputFilePath = @"C:\Output",
+                LogPath = @"C:\Logs",
+                ProductName = "Edge",
+                ProductVersion = "v2.2",
+                ProductIteration = "PI38"
+            },
+            BlackduckConfiguration = new BlackduckConfiguration
+            {
+                BaseUrl = "https://blackduck.emrsn.org",
+                Token = "token"
+            },
+            FeatureToggles = new FeatureToggles
+            {
+                EnableBlackduckAnalysis = true,
+                EnableCSharpAnalysis = true
+            },
+            EOLAnalysis = new EOLAnalysisConfig
+            {
+                Pat = "ado-pat"
+            }
+        };
 
-        _reportGenerator.GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>())
-            .Returns(@"C:\Output\report.xlsx");
-
-        var sut = CreateProgram(config);
+        var sut = CreateOrchestrator(config);
 
         await sut.StartAsync(CancellationToken.None);
 
-        await _coreAnalysisOrchestrator.Received(1).RunAsync(
-            Arg.Is<AnalysisRequest>(r => r.EnableBlackduckAnalysis && !r.EnableEolAnalysis),
+        await _executionRunner.Received(1).RunAsync(
+            Arg.Is<DartExecutionRequest>(request =>
+                request.ReportConfiguration.ProductName == "Edge"
+                && request.BlackduckConfiguration.BaseUrl == "https://blackduck.emrsn.org"
+                && request.EolAnalysisConfiguration.Pat == "ado-pat"),
+            Arg.Any<IProgress<DartExecutionProgress>>(),
             Arg.Any<CancellationToken>());
-
-        _reportGenerator.Received(1).GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>());
-
-        _reportGenerator.DidNotReceive().GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<IReadOnlyCollection<EolFinding>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>());
     }
 
     [Fact]
-    public async Task StartAsync_ShouldUseEolOverload_WhenEolFindingsExist()
+    public async Task StartAsync_ShouldLogRuntimeIssuesAsWarnings()
     {
         var config = CreateConfig(enableBlackduck: false, enableCsharp: true, enableNpm: false);
 
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new AnalysisResult
+        _executionRunner.RunAsync(Arg.Any<DartExecutionRequest>(), Arg.Any<IProgress<DartExecutionProgress>>(), Arg.Any<CancellationToken>())
+            .Returns(new DartExecutionResult
             {
-                EolFindings =
-                [
-                    new EolFinding
-                    {
-                        PackageId = "Newtonsoft.Json",
-                        Repository = "Repo",
-                        Project = "Proj",
-                        CurrentVersion = "12.0.3"
-                    }
-                ]
+                Issues = [new RunIssue { Source = "EOL", Message = "Sample warning", IsWarning = true }],
+                Status = RunStatus.CompletedWithWarnings
             });
 
-        _reportGenerator.GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<IReadOnlyCollection<EolFinding>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>())
-            .Returns(@"C:\Output\report.xlsx");
-
-        var sut = CreateProgram(config);
-
-        await sut.StartAsync(CancellationToken.None);
-
-        await _coreAnalysisOrchestrator.Received(1).RunAsync(
-            Arg.Is<AnalysisRequest>(r => !r.EnableBlackduckAnalysis && r.EnableEolAnalysis),
-            Arg.Any<CancellationToken>());
-
-        _reportGenerator.Received(1).GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<IReadOnlyCollection<EolFinding>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>());
-    }
-
-    [Fact]
-    public async Task StartAsync_ShouldSetCurrentResults_WhenBlackduckEnabledAndCurrentResultsMissing()
-    {
-        var config = CreateConfig(enableBlackduck: true, enableCsharp: false, enableNpm: false);
-        config.BlackduckConfiguration.CurrentResults = string.Empty;
-
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new AnalysisResult());
-
-        _reportGenerator.GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>())
-            .Returns(@"C:\Output\generated.xlsx");
-
-        var sut = CreateProgram(config);
-
-        await sut.StartAsync(CancellationToken.None);
-
-        Assert.Equal(@"C:\Output\generated.xlsx", config.BlackduckConfiguration.CurrentResults);
-    }
-
-    [Fact]
-    public async Task StartAsync_ShouldNotGenerateReport_WhenAllAnalysisTogglesDisabled()
-    {
-        var config = CreateConfig(enableBlackduck: false, enableCsharp: false, enableNpm: false);
-
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new AnalysisResult());
-
-        var sut = CreateProgram(config);
-
-        await sut.StartAsync(CancellationToken.None);
-
-        await _coreAnalysisOrchestrator.Received(1).RunAsync(
-            Arg.Is<AnalysisRequest>(r => !r.EnableBlackduckAnalysis && !r.EnableEolAnalysis),
-            Arg.Any<CancellationToken>());
-
-        _reportGenerator.DidNotReceive().GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>());
-
-        _reportGenerator.DidNotReceive().GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<IReadOnlyCollection<EolFinding>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>());
-    }
-
-    [Fact]
-    public async Task StartAsync_ShouldLogCoreIssuesAsWarnings()
-    {
-        var config = CreateConfig(enableBlackduck: false, enableCsharp: true, enableNpm: false);
-
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new AnalysisResult
-            {
-                Issues =
-                [
-                    new RunIssue
-                    {
-                        Source = "EOL",
-                        Message = "Sample warning",
-                        IsWarning = true
-                    }
-                ],
-                EolFindings = [new EolFinding { PackageId = "pkg" }]
-            });
-
-        _reportGenerator.GenerateCurrentFormatReport(
-            Arg.Any<IReadOnlyCollection<RowDetails>>(),
-            Arg.Any<IReadOnlyCollection<EolFinding>>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>(),
-            Arg.Any<string>())
-            .Returns(@"C:\Output\report.xlsx");
-
-        var sut = CreateProgram(config);
+        var sut = CreateOrchestrator(config);
 
         await sut.StartAsync(CancellationToken.None);
 
@@ -311,14 +148,13 @@ public class DartOrchestratorTests
     }
 
     [Fact]
-    public async Task StartAsync_ShouldStopApplication_WhenCoreThrows()
+    public async Task StartAsync_ShouldStopApplication_WhenRunnerThrows()
     {
         var config = CreateConfig(enableBlackduck: true, enableCsharp: false, enableNpm: false);
+        _executionRunner.RunAsync(Arg.Any<DartExecutionRequest>(), Arg.Any<IProgress<DartExecutionProgress>>(), Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromException<DartExecutionResult>(new InvalidOperationException("boom")));
 
-        _coreAnalysisOrchestrator.RunAsync(Arg.Any<AnalysisRequest>(), Arg.Any<CancellationToken>())
-            .Returns(_ => Task.FromException<AnalysisResult>(new InvalidOperationException("boom")));
-
-        var sut = CreateProgram(config);
+        var sut = CreateOrchestrator(config);
 
         await sut.StartAsync(CancellationToken.None);
 
@@ -326,11 +162,10 @@ public class DartOrchestratorTests
         _lifetime.Received(1).StopApplication();
     }
 
-    private DartOrchestrator CreateProgram(Config config)
+    private DartOrchestrator CreateOrchestrator(Config config)
         => new(
             Options.Create(config),
-            _coreAnalysisOrchestrator,
-            _reportGenerator,
+            _executionRunner,
             _lifetime,
             _logger);
 

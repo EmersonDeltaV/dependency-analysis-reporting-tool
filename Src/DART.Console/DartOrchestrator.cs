@@ -1,5 +1,5 @@
 using DART.Core;
-using DART.ReportGenerator;
+using DART.Runtime;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,27 +8,21 @@ namespace DART.Console
 {
     public class DartOrchestrator : IHostedService
     {
-        private readonly IAnalysisOrchestrator _coreAnalysisOrchestrator;
-        private readonly IReportGenerator _reportGenerator;
+        private readonly IDartExecutionRunner _executionRunner;
         private readonly ILogger<DartOrchestrator> _logger;
         private readonly Config _config;
         private readonly IHostApplicationLifetime _lifetime;
 
         private bool IsBlackduckEnabled => _config.FeatureToggles.EnableBlackduckAnalysis;
-        private bool HasBothBlackduckResults =>
-            !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.PreviousResults) &&
-            !string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults);
 
         public DartOrchestrator(
             IOptions<Config> configOptions,
-            IAnalysisOrchestrator coreAnalysisOrchestrator,
-            IReportGenerator reportGenerator,
+            IDartExecutionRunner executionRunner,
             IHostApplicationLifetime lifetime,
             ILogger<DartOrchestrator> logger)
         {
             _config = configOptions.Value ?? throw new ConfigException("Failed to load configuration");
-            _coreAnalysisOrchestrator = coreAnalysisOrchestrator ?? throw new ArgumentNullException(nameof(coreAnalysisOrchestrator));
-            _reportGenerator = reportGenerator ?? throw new ArgumentNullException(nameof(reportGenerator));
+            _executionRunner = executionRunner ?? throw new ArgumentNullException(nameof(executionRunner));
             _lifetime = lifetime;
             _logger = logger;
 
@@ -72,16 +66,15 @@ namespace DART.Console
             {
                 _logger.LogInformation("Starting analysis...");
 
-                if (HasBothBlackduckResults)
-                {
-                    _reportGenerator.CompareCurrentWithPrevious(
-                        _config.BlackduckConfiguration.CurrentResults,
-                        _config.BlackduckConfiguration.PreviousResults);
-                    return;
-                }
+                var request = ConfigToDartExecutionRequestMapper.Map(_config);
+                var progress = new Progress<DartExecutionProgress>(item =>
+                    _logger.LogInformation("[{Stage}] {Message}", item.Stage, item.Message));
+                var result = await _executionRunner.RunAsync(request, progress, cancellationToken);
 
-                _logger.LogInformation("No previous results found. Skipping comparison.");
-                await RunCoreOrchestrationFlowAsync(cancellationToken);
+                foreach (var issue in result.Issues)
+                {
+                    _logger.LogWarning("[Runtime] {Source}: {Message}", issue.Source, issue.Message);
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -107,64 +100,5 @@ namespace DART.Console
 
         public Task StopAsync(CancellationToken cancellationToken)
             => Task.CompletedTask;
-
-        private async Task RunCoreOrchestrationFlowAsync(CancellationToken cancellationToken)
-        {
-            var enableEolAnalysis =
-                _config.FeatureToggles.EnableCSharpAnalysis ||
-                _config.FeatureToggles.EnableNpmAnalysis;
-
-            var request = new AnalysisRequest
-            {
-                EnableBlackduckAnalysis = _config.FeatureToggles.EnableBlackduckAnalysis,
-                EnableEolAnalysis = enableEolAnalysis
-            };
-
-            var result = await _coreAnalysisOrchestrator.RunAsync(request, cancellationToken);
-
-            foreach (var issue in result.Issues)
-            {
-                _logger.LogWarning("[CoreAnalysis] {Source}: {Message}", issue.Source, issue.Message);
-            }
-
-            if (!request.EnableBlackduckAnalysis && !request.EnableEolAnalysis)
-            {
-                return;
-            }
-
-            var rows = result.BlackduckFindings.Select(finding => new RowDetails
-            {
-                ApplicationName = finding.ApplicationName,
-                SoftwareComponent = finding.SoftwareComponent,
-                Version = finding.Version,
-                SecurityRisk = finding.SecurityRisk,
-                VulnerabilityId = finding.VulnerabilityId,
-                RecommendedFix = finding.RecommendedFix,
-                MatchType = finding.MatchType
-            }).ToList();
-
-            var appCode = Environment.GetEnvironmentVariable("DART_APP_CODE") ?? "app";
-            var reportPath = result.EolFindings.Count == 0
-                ? _reportGenerator.GenerateCurrentFormatReport(
-                    rows,
-                    _config.ReportConfiguration.OutputFilePath,
-                    appCode,
-                    _config.ReportConfiguration.ProductName,
-                    _config.ReportConfiguration.ProductVersion,
-                    _config.ReportConfiguration.ProductIteration)
-                : _reportGenerator.GenerateCurrentFormatReport(
-                    rows,
-                    result.EolFindings,
-                    _config.ReportConfiguration.OutputFilePath,
-                    appCode,
-                    _config.ReportConfiguration.ProductName,
-                    _config.ReportConfiguration.ProductVersion,
-                    _config.ReportConfiguration.ProductIteration);
-
-            if (request.EnableBlackduckAnalysis && string.IsNullOrWhiteSpace(_config.BlackduckConfiguration.CurrentResults))
-            {
-                _config.BlackduckConfiguration.CurrentResults = reportPath;
-            }
-        }
     }
 }

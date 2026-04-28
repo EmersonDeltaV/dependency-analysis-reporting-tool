@@ -6,7 +6,7 @@ namespace DART.Runtime.Tests.Runtime;
 public sealed class DartRuntimeServiceCollectionExtensionsTests
 {
     [Fact]
-    public void AddDartRuntime_ShouldRegisterScopeFactory()
+    public void AddDartRuntime_ShouldRegisterRuntimeServices()
     {
         var services = new ServiceCollection();
 
@@ -14,7 +14,9 @@ public sealed class DartRuntimeServiceCollectionExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
         var scopeFactory = serviceProvider.GetRequiredService<IDartExecutionScopeFactory>();
+        var executionRunner = serviceProvider.GetRequiredService<IDartExecutionRunner>();
 
         Assert.IsType<ServiceProviderDartExecutionScopeFactory>(scopeFactory);
+        Assert.IsType<DartExecutionRunner>(executionRunner);
     }
 }
