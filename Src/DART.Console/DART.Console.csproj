@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>DART.Console</AssemblyName>
     <RootNamespace>DART.Console</RootNamespace>
+    <IsPackable>false</IsPackable>
 	<PublishSingleFile>true</PublishSingleFile>
 	<SelfContained>true</SelfContained>
 	<PublishReadyToRun>true</PublishReadyToRun>
@@ -21,10 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DART.BlackduckAnalysis\DART.BlackduckAnalysis.csproj" />
-    <ProjectReference Include="..\DART.Core\DART.Core.csproj" />
-    <ProjectReference Include="..\DART.EOLAnalysis\DART.EOLAnalysis.csproj" />
-    <ProjectReference Include="..\DART.ReportGenerator\DART.ReportGenerator.csproj" />
+    <ProjectReference Include="..\DART.Runtime\DART.Runtime.csproj" />
   </ItemGroup>
 
   <ItemGroup>

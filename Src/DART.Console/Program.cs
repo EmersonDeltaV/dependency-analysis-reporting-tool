@@ -1,8 +1,5 @@
-using DART.BlackduckAnalysis;
 using DART.Console;
-using DART.Core;
-using DART.EOLAnalysis;
-using DART.ReportGenerator.DependencyInjection;
+using DART.Runtime;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,17 +43,9 @@ class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
-        builder.Services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();
-        builder.Services.AddBlackduckAnalysis();
-        builder.Services.AddEolAnalysis();
-        builder.Services.AddReportGenerator();
+        builder.Services.AddDartRuntime();
 
         builder.Services.Configure<Config>(configuration);
-        // Register BlackduckConfiguration separately from the nested Config property
-        builder.Services.Configure<BlackduckConfiguration>(configuration.GetSection("BlackduckConfiguration"));
-        builder.Services.Configure<ReportConfiguration>(configuration.GetSection("ReportConfiguration"));
-        builder.Services.Configure<EOLAnalysisConfig>(configuration.GetSection("EOLAnalysis"));
-        builder.Services.Configure<FeatureToggles>(configuration.GetSection("FeatureToggles"));
         builder.Services.AddHostedService<DartOrchestrator>();
         builder.Services.AddSingleton<IConfiguration>(configuration);
 

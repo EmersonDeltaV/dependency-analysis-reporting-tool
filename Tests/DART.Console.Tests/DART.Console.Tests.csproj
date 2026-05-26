@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\DART.Console\DART.Console.csproj" />
+    <ProjectReference Include="..\..\Src\DART.Runtime\DART.Runtime.csproj" />
   </ItemGroup>
 
 </Project>
